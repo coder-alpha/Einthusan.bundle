@@ -50,9 +50,33 @@ def MainMenu():
 	oc.add(PrefsObject(title = 'Preferences', thumb = R('icon-prefs.png')))
 
 	oc.add(DirectoryObject(key = Callback(ShowMenu, title = 'Movies'), title = 'Movies', thumb = R(ICON_MOVIES)))
+	
+	oc.add(DirectoryObject(key = Callback(SearchQueueMenu, title = 'Search Queue'), title = 'Search Queue', summary='Search using saved search terms', thumb = R(ICON_SEARCH)))
 
 	return oc
 
+@route(PREFIX + "/searchQueueMenu")
+def SearchQueueMenu(title):
+	oc2 = ObjectContainer(title2='Search Using Term')
+	#add a way to clear bookmarks list
+	oc2.add(DirectoryObject(
+		key = Callback(ClearSearches),
+		title = "Clear Search Queue",
+		thumb = R(ICON_SEARCH),
+		summary = "CAUTION! This will clear your entire search queue list!"
+		)
+	)
+	for each in Dict:
+		query = Dict[each]
+		#Log("each-----------" + each)
+		#Log("query-----------" + query)
+		if each.find(TITLE.lower()) != -1 and 'MyCustomSearch' in each and query != 'removed':
+			oc2.add(DirectoryObject(key = Callback(Search, query = query, lang = Prefs['langPref'], page_count=1), title = query, thumb = R(ICON_SEARCH))
+		)
+
+	return oc2
+
+	
 @route(PREFIX + "/showMenu")
 def ShowMenu(title):
 	oc2 = ObjectContainer(title2='Movies')
@@ -132,9 +156,10 @@ def ShowCategory(title, lang, org, filter, cat, page_count, search):
 		#Log("thumb--------" + str(thumb))
 		summary = unicode(each.xpath("div//div//p[@class='desc_body']//text()")[0])
 		#Log("summary--------" + str(summary))
+		wiki_url = each.xpath("div//div//a//@href")[1]
 
 		oc.add(DirectoryObject(
-			key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art),
+			key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url),
 			title = title,
 			summary = summary,
 			thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')
@@ -153,13 +178,13 @@ def ShowCategory(title, lang, org, filter, cat, page_count, search):
 	return oc
 
 ######################################################################################
-# Gets metadata and google docs link from episode page. Checks for trailer availablity.
 
 @route(PREFIX + "/episodedetail")
-def EpisodeDetail(title, url, thumb, summary, art):
+def EpisodeDetail(title, url, thumb, summary, art, wiki_url):
 	
 	url = BASE_URL + url
 	oc = ObjectContainer(title1 = unicode(title), art=art)
+	#jsonOBJ = JSON.ObjectFromURL(wiki_url)['query']['pages']
 	
 	title = title
 	description = summary
@@ -212,7 +237,7 @@ def Bookmarks(title):
 	for each in Dict:
 		url = Dict[each]
 		#Log("url-----------" + url)
-		if url.find(TITLE.lower()) != -1:
+		if url.find(TITLE.lower()) != -1 and 'http' in url:
 			page_data = HTML.ElementFromURL(url)
 			movies = page_data.xpath(".//div[@class='video-object-wrapper']")
 	
@@ -230,9 +255,10 @@ def Bookmarks(title):
 				#Log("thumb--------" + str(thumb))
 				summary = unicode(each.xpath("div//div//p[@class='desc_body']//text()")[0])
 				#Log("summary--------" + str(summary))
+				wiki_url = each.xpath("div//div//a//@href")[1]
 
 				oc.add(DirectoryObject(
-					key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art),
+					key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url),
 					title = title,
 					summary = summary,
 					thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')
@@ -288,13 +314,30 @@ def RemoveBookmark(title, url):
 @route(PREFIX + "/clearbookmarks")
 def ClearBookmarks():
 
-	Dict.Reset()
+	for each in Dict:
+		if each.find(TITLE.lower()) != -1 and 'http' in each:
+			Dict[each] = 'removed'
+	Dict.Save()
 	return ObjectContainer(header="My Bookmarks", message='Your bookmark list will be cleared soon.')
 
+######################################################################################
+# Clears the Dict that stores the search list
+	
+@route(PREFIX + "/clearsearches")
+def ClearSearches():
+
+	for each in Dict:
+		if each.find(TITLE.lower()) != -1 and 'MyCustomSearch' in each:
+			Dict[each] = 'removed'
+	Dict.Save()
+	return ObjectContainer(header="Search Queue", message='Your Search Queue list will be cleared soon.')
+	
 ####################################################################################################
 @route(PREFIX + "/search")
 def Search(query, lang, page_count):
 
+	Dict[TITLE.lower() +'MyCustomSearch'+query] = query
+	Dict.Save()
 	oc = ObjectContainer(title2='Search Results')
 	data = HTTP.Request(SEARCH_URL + '?lang='+ lang +'&search_query=%s' % String.Quote(query, usePlus=True), headers="").content
 	page_data = HTML.ElementFromString(data)
@@ -330,9 +373,10 @@ def Search(query, lang, page_count):
 			#Log("thumb--------" + str(thumb))
 			summary = unicode(each.xpath("div//div//p[@class='desc_body']//text()")[0])
 			#Log("summary--------" + str(summary))
+			wiki_url = each.xpath("div//div//a//@href")[1]
 
 			oc.add(DirectoryObject(
-				key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art),
+				key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url),
 				title = title,
 				summary = summary,
 				thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')
@@ -345,3 +389,52 @@ def Search(query, lang, page_count):
 	return oc
 	
 ####################################################################################################
+
+def getValues(self, page, name):
+	value = None
+	regexps = ['[ ]+=[\t ]+(.*?)\n\|', '[ ]+=[\t ]+(.*?)\|\n']
+	for r in regexps:
+		rx = re.compile(name + r, re.IGNORECASE|re.DOTALL|re.MULTILINE)
+		m1 = rx.search(page)
+		if m1:
+			value = m1.groups()[0]
+
+		if value.find('{{small|') != -1:
+			value = re.sub('\{\{small\|.+?\}\}', '', value)
+
+		if value.find('{{Plain list') == 0 or value.find('{{Plainlist') == 0:
+			value = value.split('\n')[1:-1]
+
+			break
+
+		if value[0:5].lower() == '{{ubl' or value.find('{{Unbulleted list') == 0:
+			value = value.split('|')[1:]
+		elif value.find('<br />') != -1:
+			value = value.split('<br />')
+		elif value.find('<br>') != -1:
+			value = value.split('<br>')
+		elif value.find('<br \\/>') != -1:
+			value = value.split('<br \\/>')
+		else:
+			value = [value]
+
+		break
+	
+	ret = []	
+	if value is not None:
+		nuke = ['[[',']]','}}','{{', ':* ', '* ']
+	
+		for v in value:
+			for n in nuke:
+				v = v.replace(n, '')
+
+			if v.find('|') != -1 and v.find('date|') == -1:
+				v = v.split('|')[1]
+			v = re.sub('<[^>]+>', '', v)
+			v = v.strip()
+			v = v.strip(',')
+			
+			if v.find("'''") == -1:
+				ret.append(v)
+	
+	return ret
