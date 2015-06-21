@@ -1,11 +1,13 @@
 ######################################################################################
 #
-#	Einthusan.com - v0.01
+#	Einthusan.com
 #
 ######################################################################################
 
-TITLE = "Einthusan"
-PREFIX = "/video/einthusan"
+import common, updater
+
+TITLE = common.TITLE
+PREFIX = common.PREFIX
 ART = "art-default.jpg"
 ICON = "icon-einthusan.png"
 ICON_LIST = "icon-list.png"
@@ -15,7 +17,11 @@ ICON_NEXT = "icon-next.png"
 ICON_MOVIES = "icon-movies.png"
 ICON_SERIES = "icon-series.png"
 ICON_QUEUE = "icon-queue.png"
-ICON_UNAV = "MoviePosterUnavailable.jpg"
+ICON_UPDATE = "icon-update.png"
+ICON_UNAV = "icon-unav.png"
+ICON_PREFS = "icon-prefs.png"
+ICON_LANG = "icon-lang.png"
+
 BASE_URL = "http://www.einthusan.com"
 LANG_URL = "index.php?lang="
 CATEGORY_BLURAY_URL = 'bluray'
@@ -44,51 +50,48 @@ def Start():
 @handler(PREFIX, TITLE, art=ART, thumb=ICON)
 def MainMenu():
 	
-	oc = ObjectContainer(title2=TITLE)
-	oc.add(InputDirectoryObject(key = Callback(Search, lang = Prefs['langPref'], page_count=1), title='Search', summary='Search Movies', prompt='Search for...'))
-	oc.add(DirectoryObject(key = Callback(Bookmarks, title="My Movie Bookmarks"), title = "My Movie Bookmarks", thumb = R(ICON_QUEUE)))
-	oc.add(PrefsObject(title = 'Preferences', thumb = R('icon-prefs.png')))
-
-	oc.add(DirectoryObject(key = Callback(ShowMenu, title = 'Movies'), title = 'Movies', thumb = R(ICON_MOVIES)))
+	defaultLang = Prefs['langPref']
 	
+	oc = ObjectContainer(title2=TITLE)
+	oc.add(InputDirectoryObject(key = Callback(Search, lang = defaultLang, page_count=1), title='Search', summary='Search Movies', prompt='Search for...'))
+
+	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = defaultLang), title = defaultLang.title() + ' Movies', thumb = R(ICON_MOVIES)))
+	oc.add(DirectoryObject(key = Callback(SetLanguage), title = 'Movies (Language Menu)', thumb = R(ICON_LANG)))
+	
+	oc.add(DirectoryObject(key = Callback(Bookmarks, title="My Movie Bookmarks"), title = "My Movie Bookmarks", thumb = R(ICON_QUEUE)))
 	oc.add(DirectoryObject(key = Callback(SearchQueueMenu, title = 'Search Queue'), title = 'Search Queue', summary='Search using saved search terms', thumb = R(ICON_SEARCH)))
+	oc.add(DirectoryObject(key = Callback(updater.menu, title='Update Plugin'), title = 'Update Plugin', thumb = R(ICON_UPDATE)))
+	oc.add(PrefsObject(title = 'Preferences', thumb = R(ICON_PREFS)))
 
 	return oc
-
-@route(PREFIX + "/searchQueueMenu")
-def SearchQueueMenu(title):
-	oc2 = ObjectContainer(title2='Search Using Term')
-	#add a way to clear bookmarks list
-	oc2.add(DirectoryObject(
-		key = Callback(ClearSearches),
-		title = "Clear Search Queue",
-		thumb = R(ICON_SEARCH),
-		summary = "CAUTION! This will clear your entire search queue list!"
-		)
-	)
-	for each in Dict:
-		query = Dict[each]
-		#Log("each-----------" + each)
-		#Log("query-----------" + query)
-		if each.find(TITLE.lower()) != -1 and 'MyCustomSearch' in each and query != 'removed':
-			oc2.add(DirectoryObject(key = Callback(Search, query = query, lang = Prefs['langPref'], page_count=1), title = query, thumb = R(ICON_SEARCH))
-		)
-
-	return oc2
-
 	
-@route(PREFIX + "/showMenu")
-def ShowMenu(title):
-	oc2 = ObjectContainer(title2='Movies')
-	oc2.add(DirectoryObject(key = Callback(SortMenu, title = 'Bluray Movies', lang = Prefs['langPref'], cat = CATEGORY_BLURAY_URL, page_count = 1), title = 'Bluray Movies', thumb = R(ICON_MOVIES)))
-	oc2.add(DirectoryObject(key = Callback(SortMenu, title = 'HD Movies', lang = Prefs['langPref'], cat = CATEGORY_HD_URL, page_count = 1), title = 'HD Movies', thumb = R(ICON_MOVIES)))
+@route(PREFIX + "/setlanguage")
+def SetLanguage():
+	
+	oc = ObjectContainer(title2='Select Language')
+	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = 'hindi'), title = 'Hindi', thumb = R(ICON_MOVIES)))
+	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = 'tamil'), title = 'Tamil', thumb = R(ICON_MOVIES)))
+	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = 'telugu'), title = 'Telugu', thumb = R(ICON_MOVIES)))
+	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = 'malayalam'), title = 'Malayalam', thumb = R(ICON_MOVIES)))
+	
+	return oc
 
-	return oc2
+
+@route(PREFIX + "/showMenu")
+def ShowMenu(lang):
+
+	oc = ObjectContainer(title2= lang.title() + ' Movies')
+	oc.add(DirectoryObject(key = Callback(SortMenu, title = 'Bluray Movies', lang = lang, cat = CATEGORY_BLURAY_URL, page_count = 1), title = 'Bluray Movies', thumb = R(ICON_MOVIES)))
+	oc.add(DirectoryObject(key = Callback(SortMenu, title = 'HD Movies', lang = lang, cat = CATEGORY_HD_URL, page_count = 1), title = 'HD Movies', thumb = R(ICON_MOVIES)))
+	oc.add(InputDirectoryObject(key = Callback(Search, lang = lang, page_count=1), title='Search', summary='Search Movies', prompt='Search for...'))
+	
+	return oc
 	
 
 @route(PREFIX + "/sortMenu")
 def SortMenu(title, lang, cat, page_count):
-	oc = ObjectContainer(title2='Sort Movies By')
+
+	oc = ObjectContainer(title2='Sort ' + lang.title() + ' Movies By')
 	oc.add(DirectoryObject(key = Callback(SortMenu2, title=title, lang=lang, cat=cat, page_count=page_count, org='Activity', filter='RecentlyPosted'), title = 'Activity', thumb = R(ICON_LIST)))
 	oc.add(DirectoryObject(key = Callback(SortMenu2, title=title, lang=lang, cat=cat, page_count=page_count, org = 'Alphabetical', filter='RecentlyPosted'), title = 'Alphabetical', thumb = R(ICON_LIST)))
 	oc.add(DirectoryObject(key = Callback(SortMenu2, title=title, lang=lang, cat=cat, page_count=page_count, org = 'Cast', filter='RecentlyPosted'), title = 'Cast', thumb = R(ICON_LIST)))
@@ -100,6 +103,7 @@ def SortMenu(title, lang, cat, page_count):
 
 @route(PREFIX + "/sortMenu2")
 def SortMenu2(title, lang, cat, page_count, org, filter):
+
 	oc = ObjectContainer(title2='Filter Using')
 	furl = BASE_URL + '/' + cat + '/' + LANG_URL + lang + '&organize=' + org + '&filtered=' + filter + '&org_type=' + org
 	Log(furl)
@@ -115,7 +119,6 @@ def SortMenu2(title, lang, cat, page_count, org, filter):
 			filterS = filter.replace(" ", "")
 		#Log(" Filter ------------ " + filter)
 		oc.add(DirectoryObject(key = Callback(ShowCategory, title=title, lang=lang, org=org, filter=filterS, cat=cat, page_count=page_count, search='null'), title = filter, thumb = R(ICON_LIST)))
-	
 	
 	return oc
 	
@@ -134,8 +137,8 @@ def ShowCategory(title, lang, org, filter, cat, page_count, search):
 	if search != 'null':
 		furl = furl + '&search=' + search
 	
-	categorytitle = title
-	oc = ObjectContainer(title1 = title)
+	categorytitle = lang.title() + ' - ' + title
+	oc = ObjectContainer(title1 = categorytitle)
 
 	page_data = HTML.ElementFromURL(str(furl))
 	movies = page_data.xpath(".//div[@class='video-object-wrapper']")
@@ -261,7 +264,7 @@ def Bookmarks(title):
 					key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url),
 					title = title,
 					summary = summary,
-					thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')
+					thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback=ICON_UNAV)
 					)
 				)
 	
@@ -337,15 +340,16 @@ def ClearSearches():
 def Search(query, lang, page_count):
 
 	Dict[TITLE.lower() +'MyCustomSearch'+query] = query
+	Dict[TITLE.lower() +'MyCustomSLang'+query] = lang
 	Dict.Save()
 	oc = ObjectContainer(title2='Search Results')
 	data = HTTP.Request(SEARCH_URL + '?lang='+ lang +'&search_query=%s' % String.Quote(query, usePlus=True), headers="").content
 	page_data = HTML.ElementFromString(data)
-	movies1 = page_data.xpath(".//div[@class='search-category']//ul//li")
+	movies1 = page_data.xpath(".//div[@class='search-category-wrapper-left']//ul//li")
 	c=0
 	for each1 in movies1:
 		name = each1.xpath(".//a//text()")[0]
-		Log("name--------" + name)
+		#Log("name--------" + name)
 		c=c+1
 		if name == 'show more movies...' or c > 6:
 			oc.add(NextPageObject(
@@ -363,7 +367,7 @@ def Search(query, lang, page_count):
 			#Log("Each--------" + str(movies[0]))
 		
 			ffurl = each.xpath(".//a//@href")[0].lstrip('..')
-			Log("ffurl--------" + str(ffurl))
+			#Log("ffurl--------" + str(ffurl))
 			title = str(each.xpath(".//div//div//h1//a//text()")[0])
 			#title = unicode(each.xpath("div/a/img/@alt"))
 			#Log("title--------" + title)
@@ -379,62 +383,37 @@ def Search(query, lang, page_count):
 				key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url),
 				title = title,
 				summary = summary,
-				thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')
+				thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback=ICON_UNAV)
 				)
 			)
 		
 	
-	if len(oc) == 1:
+	if len(oc) == 0:
 		return ObjectContainer(header=title, message='No Videos Available')
 	return oc
 	
+
+@route(PREFIX + "/searchQueueMenu")
+def SearchQueueMenu(title):
+	oc2 = ObjectContainer(title2='Search Using Term')
+	#add a way to clear bookmarks list
+	oc2.add(DirectoryObject(
+		key = Callback(ClearSearches),
+		title = "Clear Search Queue",
+		thumb = R(ICON_SEARCH),
+		summary = "CAUTION! This will clear your entire search queue list!"
+		)
+	)
+	for each in Dict:
+		query = Dict[each]
+		#Log("each-----------" + each)
+		#Log("query-----------" + query)
+		if each.find(TITLE.lower()) != -1 and 'MyCustomSearch' in each and query != 'removed':
+			lang = Dict[TITLE.lower() +'MyCustomSLang'+query]
+			if lang == None or lang == '':
+				lang = Prefs['langPref']
+			oc2.add(DirectoryObject(key = Callback(Search, query = query, lang = lang, page_count=1), title = query, thumb = R(ICON_SEARCH))
+		)
+
+	return oc2
 ####################################################################################################
-
-def getValues(self, page, name):
-	value = None
-	regexps = ['[ ]+=[\t ]+(.*?)\n\|', '[ ]+=[\t ]+(.*?)\|\n']
-	for r in regexps:
-		rx = re.compile(name + r, re.IGNORECASE|re.DOTALL|re.MULTILINE)
-		m1 = rx.search(page)
-		if m1:
-			value = m1.groups()[0]
-
-		if value.find('{{small|') != -1:
-			value = re.sub('\{\{small\|.+?\}\}', '', value)
-
-		if value.find('{{Plain list') == 0 or value.find('{{Plainlist') == 0:
-			value = value.split('\n')[1:-1]
-
-			break
-
-		if value[0:5].lower() == '{{ubl' or value.find('{{Unbulleted list') == 0:
-			value = value.split('|')[1:]
-		elif value.find('<br />') != -1:
-			value = value.split('<br />')
-		elif value.find('<br>') != -1:
-			value = value.split('<br>')
-		elif value.find('<br \\/>') != -1:
-			value = value.split('<br \\/>')
-		else:
-			value = [value]
-
-		break
-	
-	ret = []	
-	if value is not None:
-		nuke = ['[[',']]','}}','{{', ':* ', '* ']
-	
-		for v in value:
-			for n in nuke:
-				v = v.replace(n, '')
-
-			if v.find('|') != -1 and v.find('date|') == -1:
-				v = v.split('|')[1]
-			v = re.sub('<[^>]+>', '', v)
-			v = v.strip()
-			v = v.strip(',')
-			
-			if v.find("'''") == -1:
-				ret.append(v)
-	
-	return ret

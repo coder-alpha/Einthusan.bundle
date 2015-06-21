@@ -1,7 +1,9 @@
 Einthusan.bundle
 ===================
 
-This is a plugin that creates a new channel in Plex Media Server to view content indexed by the website www.einthusan.com
+This is a plugin that creates a new channel in Plex Media Server to view content indexed by the website einthusan.com
+
+[Plex Support thread] (https://forums.plex.tv/index.php/topic/165072-rel-einthusan-channel-indian-movies/)
 
 System Requirements
 ===================
@@ -26,9 +28,9 @@ How To Install
 - Delete any previous versions of this bundle
 - Copy Einthusan.bundle into the PMS plugins directory under your user account:
 	- Windows 7, Vista, or Server 2008: 
-	C:\Users[Your Username]\AppData\Local\Plex Media Server\Plug-ins
+		C:\Users[Your Username]\AppData\Local\Plex Media Server\Plug-ins
 	- Windows XP, Server 2003, or Home Server: 
-	C:\Documents and Settings[Your Username]\Local Settings\Application Data\Plex Media Server\Plug-ins
+		C:\Documents and Settings[Your Username]\Local Settings\Application Data\Plex Media Server\Plug-ins
 	- Mac/Linux: 
         ~/Library/Application Support/Plex Media Server/Plug-ins
 - Restart PMS
