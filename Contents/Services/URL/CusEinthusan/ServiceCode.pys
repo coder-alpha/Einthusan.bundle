@@ -72,6 +72,12 @@ def PlayVideo(url, res, **kwargs):
 
 	try:
 		content = HTTP.Request(url).content
+		if len(content) == 0:
+			if 'bluray' in url:
+				url = url.replace('bluray','hd')
+			else:
+				url = url.replace('hd','bluray')
+			content = HTTP.Request(url).content
 	except:
 		raise Ex.MediaNotAvailable
 

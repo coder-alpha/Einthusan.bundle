@@ -4,7 +4,7 @@
 #
 ######################################################################################
 
-import common, updater
+import common, updater, urllib
 
 TITLE = common.TITLE
 PREFIX = common.PREFIX
@@ -13,6 +13,7 @@ ICON = "icon-einthusan.png"
 ICON_LIST = "icon-list.png"
 ICON_COVER = "icon-cover.png"
 ICON_SEARCH = "icon-search.png"
+ICON_SEARCH_QUEUE = "icon-search-queue.png"
 ICON_NEXT = "icon-next.png"
 ICON_MOVIES = "icon-movies.png"
 ICON_SERIES = "icon-series.png"
@@ -22,8 +23,8 @@ ICON_UPDATE_NEW = "icon-update-new.png"
 ICON_UNAV = "icon-unav.png"
 ICON_PREFS = "icon-prefs.png"
 ICON_LANG = "icon-lang.png"
-
-BASE_URL = "http://www.einthusan.com"
+BASE_URL = "http://einthusan.com"
+BASE_R_URL = "http://tiny.cc/Einthusan"
 LANG_URL = "index.php?lang="
 CATEGORY_BLURAY_URL = 'bluray'
 CATEGORY_HD_URL = 'movies'
@@ -45,6 +46,8 @@ def Start():
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0'
 	HTTP.Headers['Referer'] = 'http://www.einthusan.com'
 	
+	BASE_URL = GetRedirector(BASE_R_URL)
+	
 ######################################################################################
 # Menu hierarchy
 
@@ -54,20 +57,20 @@ def MainMenu():
 	defaultLang = Prefs['langPref']
 	
 	oc = ObjectContainer(title2=TITLE)
-	oc.add(InputDirectoryObject(key = Callback(Search, lang = defaultLang, page_count=1), title='Search', summary='Search Movies', prompt='Search for...'))
 
 	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = defaultLang), title = defaultLang.title() + ' Movies', thumb = R(ICON_MOVIES)))
 	oc.add(DirectoryObject(key = Callback(SetLanguage), title = 'Movies (Language Menu)', thumb = R(ICON_LANG)))
 	
 	oc.add(DirectoryObject(key = Callback(Bookmarks, title="My Movie Bookmarks"), title = "My Movie Bookmarks", thumb = R(ICON_QUEUE)))
-	oc.add(DirectoryObject(key = Callback(SearchQueueMenu, title = 'Search Queue'), title = 'Search Queue', summary='Search using saved search terms', thumb = R(ICON_SEARCH)))
+	
+	oc.add(InputDirectoryObject(key = Callback(Search, lang = defaultLang, page_count=1), title='Search', summary='Search Movies', prompt='Search for...', thumb = R(ICON_SEARCH)))
+	oc.add(DirectoryObject(key = Callback(SearchQueueMenu, title = 'Search Queue'), title = 'Search Queue', summary='Search using saved search terms', thumb = R(ICON_SEARCH_QUEUE)))
 	oc.add(PrefsObject(title = 'Preferences', thumb = R(ICON_PREFS)))
 	if updater.update_available()[0]:
 		oc.add(DirectoryObject(key = Callback(updater.menu, title='Update Plugin'), title = 'Update (New Available)', thumb = R(ICON_UPDATE_NEW)))
 	else:
 		oc.add(DirectoryObject(key = Callback(updater.menu, title='Update Plugin'), title = 'Update (Running Latest)', thumb = R(ICON_UPDATE)))
 	
-
 	return oc
 	
 @route(PREFIX + "/setlanguage")
@@ -215,9 +218,9 @@ def EpisodeDetail(title, url, thumb, summary, art, wiki_url, cat):
 	except:
 		url = ""
 	
-	if Check(title=title,url=url):
+	if Check(title=title,url=furl):
 		oc.add(DirectoryObject(
-			key = Callback(RemoveBookmark, title = title, url = url),
+			key = Callback(RemoveBookmark, title = title, url = furl),
 			title = "Remove Bookmark",
 			art = art,
 			summary = 'Removes the current movie from the Boomark que',
@@ -226,7 +229,7 @@ def EpisodeDetail(title, url, thumb, summary, art, wiki_url, cat):
 	)
 	else:
 		oc.add(DirectoryObject(
-			key = Callback(AddBookmark, title = title, url = url),
+			key = Callback(AddBookmark, title = title, url = furl),
 			title = "Bookmark Video",
 			summary = 'Adds the current movie to the Boomark que',
 			art = art,
@@ -256,6 +259,9 @@ def Bookmarks(title):
 				#Log("Each--------" + str(movies[0]))
 			
 				ffurl = each.xpath("a/@href")[0].lstrip('..')
+				if ' & ' in ffurl:
+					ffurl = ffurl.split(' & ')[1]
+					
 				#Log("ffurl--------" + str(ffurl))
 				title = str(each.xpath(".//div//div//h1//a//text()")[0])
 				#title = unicode(each.xpath("div/a/img/@alt"))
@@ -375,6 +381,9 @@ def Search(query, lang, page_count):
 			#Log("Each--------" + str(movies[0]))
 		
 			ffurl = each.xpath(".//a//@href")[0].lstrip('..')
+			if ' & ' in ffurl:
+				ffurl = ffurl.split(' & ')[1]
+
 			#Log("ffurl--------" + str(ffurl))
 			title = str(each.xpath(".//div//div//h1//a//text()")[0])
 			#title = unicode(each.xpath("div/a/img/@alt"))
@@ -388,7 +397,7 @@ def Search(query, lang, page_count):
 			wiki_url = each.xpath("div//div//a//@href")[1]
 
 			oc.add(DirectoryObject(
-				key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url),
+				key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url, cat='hd'),
 				title = title,
 				summary = summary,
 				thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback=ICON_UNAV)
@@ -408,7 +417,7 @@ def SearchQueueMenu(title):
 	oc2.add(DirectoryObject(
 		key = Callback(ClearSearches),
 		title = "Clear Search Queue",
-		thumb = R(ICON_SEARCH),
+		thumb = R(ICON_SEARCH_QUEUE),
 		summary = "CAUTION! This will clear your entire search queue list!"
 		)
 	)
@@ -425,3 +434,18 @@ def SearchQueueMenu(title):
 
 	return oc2
 ####################################################################################################
+####################################################################################################
+# Gets the redirecting url for .m3u8 streams
+@route(PREFIX + '/getredirector')
+def GetRedirector(url):
+
+	redirectUrl = url
+	try:
+		if '.m3u8' not in url and '.mp3' not in url and '.aac' not in url and '.m3u' not in url and '.mp4' not in url:
+			page = urllib.urlopen(url)
+			redirectUrl = page.geturl()
+	except:
+		redirectUrl = url
+			
+	#Log("Redirecting url ----- : " + redirectUrl)
+	return redirectUrl
