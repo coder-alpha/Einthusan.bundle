@@ -18,6 +18,7 @@ ICON_MOVIES = "icon-movies.png"
 ICON_SERIES = "icon-series.png"
 ICON_QUEUE = "icon-queue.png"
 ICON_UPDATE = "icon-update.png"
+ICON_UPDATE_NEW = "icon-update-new.png"
 ICON_UNAV = "icon-unav.png"
 ICON_PREFS = "icon-prefs.png"
 ICON_LANG = "icon-lang.png"
@@ -60,8 +61,12 @@ def MainMenu():
 	
 	oc.add(DirectoryObject(key = Callback(Bookmarks, title="My Movie Bookmarks"), title = "My Movie Bookmarks", thumb = R(ICON_QUEUE)))
 	oc.add(DirectoryObject(key = Callback(SearchQueueMenu, title = 'Search Queue'), title = 'Search Queue', summary='Search using saved search terms', thumb = R(ICON_SEARCH)))
-	oc.add(DirectoryObject(key = Callback(updater.menu, title='Update Plugin'), title = 'Update Plugin', thumb = R(ICON_UPDATE)))
 	oc.add(PrefsObject(title = 'Preferences', thumb = R(ICON_PREFS)))
+	if updater.update_available()[0]:
+		oc.add(DirectoryObject(key = Callback(updater.menu, title='Update Plugin'), title = 'Update (New Available)', thumb = R(ICON_UPDATE_NEW)))
+	else:
+		oc.add(DirectoryObject(key = Callback(updater.menu, title='Update Plugin'), title = 'Update (Running Latest)', thumb = R(ICON_UPDATE)))
+	
 
 	return oc
 	
@@ -69,10 +74,10 @@ def MainMenu():
 def SetLanguage():
 	
 	oc = ObjectContainer(title2='Select Language')
-	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = 'hindi'), title = 'Hindi', thumb = R(ICON_MOVIES)))
-	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = 'tamil'), title = 'Tamil', thumb = R(ICON_MOVIES)))
-	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = 'telugu'), title = 'Telugu', thumb = R(ICON_MOVIES)))
-	oc.add(DirectoryObject(key = Callback(ShowMenu, lang = 'malayalam'), title = 'Malayalam', thumb = R(ICON_MOVIES)))
+	page_elems = HTML.ElementFromURL(BASE_URL)
+	langs = page_elems.xpath(".//*[@id='jumptolang']/li/a/text()")
+	for lang in langs:
+		oc.add(DirectoryObject(key = Callback(ShowMenu, lang = lang.lower()), title = lang, thumb = R(ICON_MOVIES)))
 	
 	return oc
 
@@ -162,7 +167,7 @@ def ShowCategory(title, lang, org, filter, cat, page_count, search):
 		wiki_url = each.xpath("div//div//a//@href")[1]
 
 		oc.add(DirectoryObject(
-			key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url),
+			key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url, cat=cat),
 			title = title,
 			summary = summary,
 			thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')
@@ -183,9 +188,12 @@ def ShowCategory(title, lang, org, filter, cat, page_count, search):
 ######################################################################################
 
 @route(PREFIX + "/episodedetail")
-def EpisodeDetail(title, url, thumb, summary, art, wiki_url):
+def EpisodeDetail(title, url, thumb, summary, art, wiki_url, cat):
 	
-	url = BASE_URL + url
+	furl = BASE_URL + url
+	#Log("url ------------------- " + furl)
+	id = furl.split('id=')[1]
+	url = "http://cdn.einthusan.com/geturl/"+id+"/"+cat+"/Washington%2CDallas%2CLondon%2CToronto%2CSan%2CSydney/ & " + furl
 	oc = ObjectContainer(title1 = unicode(title), art=art)
 	#jsonOBJ = JSON.ObjectFromURL(wiki_url)['query']['pages']
 	
@@ -261,7 +269,7 @@ def Bookmarks(title):
 				wiki_url = each.xpath("div//div//a//@href")[1]
 
 				oc.add(DirectoryObject(
-					key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url),
+					key = Callback(EpisodeDetail, title = title, url = ffurl, thumb = thumb, summary = summary, art = art, wiki_url = wiki_url, cat='hd'),
 					title = title,
 					summary = summary,
 					thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback=ICON_UNAV)

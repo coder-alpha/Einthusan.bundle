@@ -1,1 +1,1 @@
-[	{		"id": "langPref",		"label": "Language",		"type": "enum",		"values": ["hindi","tamil","telugu","malayalam"],		"default": "hindi"    },	{		"id": "rootAccess",		"label": "Plugin has root acccess (Linux)",		"type": "bool",		"default": "false"    },]
+[	{		"id": "langPref",		"label": "Language",		"type": "enum",		"values": ["hindi","tamil","telugu","malayalam","kannada","bengali","marathi","punjabi","gujrati"],		"default": "hindi"    }]

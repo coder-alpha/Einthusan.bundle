@@ -1,0 +1,98 @@
+RE_FILE_URL = Regex("'file': '(http.+?)',?")
+BASE_URL = 'http://www.einthusan.com'
+HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0'
+HTTP.Headers['Referer'] = 'http://www.einthusan.com'
+	
+####################################################################################################
+def NormalizeURL(url):
+
+	return url
+
+####################################################################################################
+def MetadataObjectForURL(url):
+
+	try:
+		url = url.split(' & ')[1]
+		content = HTML.ElementFromURL(url)
+	except:
+		raise Ex.MediaNotAvailable
+
+	title = content.xpath('//a[@class="movie-title"]/text()')
+
+	if len(title) < 1:
+		raise Ex.MediaNotAvailable
+
+	try:
+		thumb = content.xpath('//a[@class="movie-cover-wrapper"]/img/@src')[0]
+		if not thumb.startswith('http'):
+			thumb = '%s/%s' % (BASE_URL, thumb.split('/',1)[1])
+	except:
+		thumb = content.xpath('//div[@class="video-object-thumb"]/a/@src')[0]
+		if not thumb.startswith('http'):
+			thumb = '%s/%s' % (BASE_URL, thumb.split('/',1)[1])
+	# for some strange reason einthusan sometimes uses urls with un-escaped spaces in them
+	thumb = thumb.replace(' ', '%20')
+
+	summary = content.xpath('//div[@class="movie-description"]//p[@class="desc_body"]/text()')[0]
+
+	return VideoClipObject(
+		title = title[0],
+		summary = summary,
+		thumb = Resource.ContentsOfURLWithFallback(url=thumb)
+	)
+
+####################################################################################################
+def MediaObjectsForURL(url):
+
+	url = url.split(' & ')[0]
+	return [
+		MediaObject(
+			container = Container.MP4,
+			video_codec = VideoCodec.H264,
+			video_resolution = '720',
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			optimized_for_streaming = True,
+			parts = [PartObject(key=Callback(PlayVideo, url=url, res='hd'))]
+		),
+		MediaObject(
+			container = Container.MP4,
+			video_codec = VideoCodec.H264,
+			video_resolution = 'sd',
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			optimized_for_streaming = True,
+			parts = [PartObject(key=Callback(PlayVideo, url=url, res='sd'))]
+		)
+	]
+
+####################################################################################################
+@indirect
+def PlayVideo(url, res, **kwargs):
+
+	try:
+		content = HTTP.Request(url).content
+	except:
+		raise Ex.MediaNotAvailable
+
+	video_files = content
+
+	return IndirectResponse(VideoClipObject, key=video_files)
+
+####################################################################################################
+def TestURLs():
+
+	test_urls = []
+	data = HTML.ElementFromURL('%s/movies/' % BASE_URL)
+
+	for video in data.xpath('//div[@class="video-listing"]'):
+		link = video.xpath('.//a/@href')[0]
+
+		if not link.startswith('http'):
+			link = '%s/%s' % (BASE_URL, link.split('/',1)[1])
+		test_urls.append(link)
+
+		if len(test_urls) > 2:
+			break
+
+	return test_urls
