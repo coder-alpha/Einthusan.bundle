@@ -12,7 +12,7 @@ def NormalizeURL(url):
 def MetadataObjectForURL(url):
 
 	try:
-		url = url.split(' & ')[1]
+		url = url.split('+&+')[1]
 		content = HTML.ElementFromURL(url)
 	except:
 		raise Ex.MediaNotAvailable
@@ -44,7 +44,7 @@ def MetadataObjectForURL(url):
 ####################################################################################################
 def MediaObjectsForURL(url):
 
-	url = url.split(' & ')[0]
+	url = url.split('+&+')[0]
 	return [
 		MediaObject(
 			container = Container.MP4,

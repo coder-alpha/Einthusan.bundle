@@ -196,7 +196,7 @@ def EpisodeDetail(title, url, thumb, summary, art, wiki_url, cat):
 	furl = BASE_URL + url
 	#Log("url ------------------- " + furl)
 	id = furl.split('id=')[1]
-	url = "http://cdn.einthusan.com/geturl/"+id+"/"+cat+"/Washington%2CDallas%2CLondon%2CToronto%2CSan%2CSydney/ & " + furl
+	url = "http://cdn.einthusan.com/geturl/"+id+"/"+cat+"/Washington%2CDallas%2CLondon%2CToronto%2CSan%2CSydney/+&+" + furl
 	oc = ObjectContainer(title1 = unicode(title), art=art)
 	#jsonOBJ = JSON.ObjectFromURL(wiki_url)['query']['pages']
 	
