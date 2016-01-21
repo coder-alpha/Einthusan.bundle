@@ -19,6 +19,7 @@ System Requirements
 		- Samsung Plex App
 		- Android Kit-Kat (Samsung Galaxy S3)
 		- iOS (Apple iPhone6)
+		- AppleTV via [PlexConnect] (https://github.com/iBaa/PlexConnect)
 
 How To Install
 ==============
