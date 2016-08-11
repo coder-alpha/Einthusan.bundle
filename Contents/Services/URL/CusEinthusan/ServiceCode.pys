@@ -58,7 +58,7 @@ def MediaObjectsForURL(url):
 def PlayVideo(url, **kwargs):
 
 	try:
-		page = HTTP.Request(url.split('+&+')[0], cacheTime=CACHE_1HOUR).content
+		page = HTTP.Request(url.split('+&+')[0]).content
 	except:
 		raise Ex.MediaNotAvailable
 
