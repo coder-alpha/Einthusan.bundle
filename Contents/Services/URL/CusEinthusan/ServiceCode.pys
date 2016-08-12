@@ -47,6 +47,7 @@ def MediaObjectsForURL(url):
 
 	return [
 		MediaObject(
+			audio_channels=2,
 			parts=[PartObject(
 				key=HTTPLiveStreamURL(Callback(PlayVideo, url=url))
 				)]
@@ -57,12 +58,17 @@ def MediaObjectsForURL(url):
 @indirect
 def PlayVideo(url, **kwargs):
 
+	# Plex transcoder will % encode user-agent causing the request to fail,
+	# No user-agent error when stream can be direct played
+	# Note: user-agent needs to be the same in the request and the VideoClipObject
+	#   because there is a hash tied to the requested user-agent
+	http_headers = {'User-Agent': USER_AGENT.split()[0]}
 	try:
-		page = HTTP.Request(url.split('+&+')[0]).content
+		page = HTTP.Request(url.split('+&+')[0], headers=http_headers, cacheTime=10).content
 	except:
 		raise Ex.MediaNotAvailable
 
-	return IndirectResponse(VideoClipObject, key=page, http_headers={'User-Agent': USER_AGENT})
+	return IndirectResponse(VideoClipObject, key=page.strip(), http_headers=http_headers)
 
 ####################################################################################################
 def TestURLs():
