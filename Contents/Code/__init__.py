@@ -52,7 +52,7 @@ def Start():
 # Menu hierarchy
 
 @handler(PREFIX, TITLE, art=ART, thumb=ICON)
-def MainMenu():
+def MainMenu(excludeFields=None):
 	
 	defaultLang = Prefs['langPref']
 	
@@ -74,7 +74,7 @@ def MainMenu():
 	return oc
 	
 @route(PREFIX + "/setlanguage")
-def SetLanguage():
+def SetLanguage(excludeFields=None):
 	
 	oc = ObjectContainer(title2='Select Language')
 	page_elems = HTML.ElementFromURL(BASE_URL)
@@ -86,7 +86,7 @@ def SetLanguage():
 
 
 @route(PREFIX + "/showMenu")
-def ShowMenu(lang):
+def ShowMenu(lang, excludeFields=None):
 
 	oc = ObjectContainer(title2= lang.title() + ' Movies')
 	oc.add(DirectoryObject(key = Callback(SortMenu, title = 'Bluray Movies', lang = lang, cat = CATEGORY_BLURAY_URL, page_count = 1), title = 'Bluray Movies', thumb = R(ICON_MOVIES)))
@@ -97,7 +97,7 @@ def ShowMenu(lang):
 	
 
 @route(PREFIX + "/sortMenu")
-def SortMenu(title, lang, cat, page_count):
+def SortMenu(title, lang, cat, page_count, excludeFields=None):
 
 	oc = ObjectContainer(title2='Sort ' + lang.title() + ' Movies By')
 	oc.add(DirectoryObject(key = Callback(SortMenu2, title=title, lang=lang, cat=cat, page_count=page_count, org='Activity', filter='RecentlyPosted'), title = 'Activity', thumb = R(ICON_LIST)))
@@ -110,7 +110,7 @@ def SortMenu(title, lang, cat, page_count):
 	return oc	
 
 @route(PREFIX + "/sortMenu2")
-def SortMenu2(title, lang, cat, page_count, org, filter):
+def SortMenu2(title, lang, cat, page_count, org, filter, excludeFields=None):
 
 	oc = ObjectContainer(title2='Filter Using')
 	furl = BASE_URL + '/' + cat + '/' + LANG_URL + lang + '&organize=' + org + '&filtered=' + filter + '&org_type=' + org
@@ -134,7 +134,7 @@ def SortMenu2(title, lang, cat, page_count, org, filter):
 # Creates page url from category and creates objects from that page
 
 @route(PREFIX + "/showcategory")	
-def ShowCategory(title, lang, org, filter, cat, page_count, search):
+def ShowCategory(title, lang, org, filter, cat, page_count, search, excludeFields=None):
 
 	furl = BASE_URL + '/' + cat + '/' + LANG_URL + lang
 	furl = furl + '&page=' + page_count + '&organize=' + org + '&filtered=' + filter + '&org_type=' + org
@@ -191,7 +191,7 @@ def ShowCategory(title, lang, org, filter, cat, page_count, search):
 ######################################################################################
 
 @route(PREFIX + "/episodedetail")
-def EpisodeDetail(title, url, thumb, summary, art, wiki_url, cat):
+def EpisodeDetail(title, url, thumb, summary, art, wiki_url, cat, excludeFields=None):
 	
 	furl = BASE_URL + url
 	#Log("url ------------------- " + furl)
@@ -244,7 +244,7 @@ def EpisodeDetail(title, url, thumb, summary, art, wiki_url, cat):
 # Loads bookmarked shows from Dict.  Titles are used as keys to store the show urls.
 
 @route(PREFIX + "/bookmarks")	
-def Bookmarks(title):
+def Bookmarks(title, excludeFields=None):
 
 	oc = ObjectContainer(title1 = title)
 	
@@ -298,7 +298,7 @@ def Bookmarks(title):
 ######################################################################################
 # Checks a show to the bookmarks list using the title as a key for the url
 @route(PREFIX + "/checkbookmark")	
-def Check(title, url):
+def Check(title, url, excludeFields=None):
 	bool = False
 	url = Dict[title]
 	#Log("url-----------" + url)
@@ -311,7 +311,7 @@ def Check(title, url):
 # Adds a show to the bookmarks list using the title as a key for the url
 	
 @route(PREFIX + "/addbookmark")
-def AddBookmark(title, url):
+def AddBookmark(title, url, excludeFields=None):
 	
 	Dict[title] = url
 	Dict.Save()
@@ -320,7 +320,7 @@ def AddBookmark(title, url):
 # Removes a show to the bookmarks list using the title as a key for the url
 	
 @route(PREFIX + "/removebookmark")
-def RemoveBookmark(title, url):
+def RemoveBookmark(title, url, excludeFields=None):
 	
 	Dict[title] = 'removed'
 	Dict.Save()
@@ -329,7 +329,7 @@ def RemoveBookmark(title, url):
 # Clears the Dict that stores the bookmarks list
 	
 @route(PREFIX + "/clearbookmarks")
-def ClearBookmarks():
+def ClearBookmarks(excludeFields=None):
 
 	for each in Dict:
 		if each.find(TITLE.lower()) != -1 and 'http' in each:
@@ -341,7 +341,7 @@ def ClearBookmarks():
 # Clears the Dict that stores the search list
 	
 @route(PREFIX + "/clearsearches")
-def ClearSearches():
+def ClearSearches(excludeFields=None):
 
 	for each in Dict:
 		if each.find(TITLE.lower()) != -1 and 'MyCustomSearch' in each:
@@ -351,7 +351,7 @@ def ClearSearches():
 	
 ####################################################################################################
 @route(PREFIX + "/search")
-def Search(query, lang, page_count):
+def Search(query, lang, page_count, excludeFields=None):
 
 	Dict[TITLE.lower() +'MyCustomSearch'+query] = query
 	Dict[TITLE.lower() +'MyCustomSLang'+query] = lang
@@ -411,7 +411,7 @@ def Search(query, lang, page_count):
 	
 
 @route(PREFIX + "/searchQueueMenu")
-def SearchQueueMenu(title):
+def SearchQueueMenu(title, excludeFields=None):
 	oc2 = ObjectContainer(title2='Search Using Term')
 	#add a way to clear bookmarks list
 	oc2.add(DirectoryObject(
@@ -437,7 +437,7 @@ def SearchQueueMenu(title):
 ####################################################################################################
 # Gets the redirecting url for .m3u8 streams
 @route(PREFIX + '/getredirector')
-def GetRedirector(url):
+def GetRedirector(url, excludeFields=None):
 
 	redirectUrl = url
 	try:
