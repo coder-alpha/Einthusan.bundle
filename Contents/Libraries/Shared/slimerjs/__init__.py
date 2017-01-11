@@ -26,7 +26,7 @@ def einthusan(python_dir, firefox_dir, url):
 			firefox_dir = ""
 		else:
 			if sys.platform == "linux" or sys.platform == "linux2" or sys.platform == "darwin":
-				os.environ["SLIMERJSLAUNCHER"] = os.path.join(firefox_dir, 'firefox')
+				os.environ["SLIMERJSLAUNCHER"] = firefox_dir
 			elif sys.platform == "win32":
 				os.environ["SLIMERJSLAUNCHER"] = os.path.join(firefox_dir, 'firefox.exe')
 

@@ -4,7 +4,7 @@
 #
 ######################################################################################
 
-import common, updater, urllib
+import common, updater, urllib, time
 import slimerjs, json
 
 TITLE = common.TITLE
@@ -27,6 +27,7 @@ ICON_LANG = "icon-lang.png"
 BASE_URL = "https://einthusan.tv"
 SEARCH_URL = "https://einthusan.tv/search/"
 LAST_PROCESSED_URL = []
+VideoURL = {}
 
 ######################################################################################
 # Set global variables
@@ -44,7 +45,11 @@ def Start():
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0'
 	HTTP.Headers['Referer'] = 'http://www.einthusan.tv'
 	
-	#BASE_URL = GetRedirector(BASE_R_URL)
+	# Initialize SlimerJS module once for faster load times
+	Thread.Create(initSlimerJS)
+	Log("Prefs:")
+	Log("Python directory: " + Prefs['python_dir'])
+	Log("Firefox directory: " + Prefs['firefox_dir'])
 	
 ######################################################################################
 # Menu hierarchy
@@ -68,9 +73,6 @@ def MainMenu():
 		oc.add(DirectoryObject(key = Callback(updater.menu, title='Update Plugin'), title = 'Update (New Available)', thumb = R(ICON_UPDATE_NEW)))
 	else:
 		oc.add(DirectoryObject(key = Callback(updater.menu, title='Update Plugin'), title = 'Update (Running Latest)', thumb = R(ICON_UPDATE)))
-		
-	# Initialize SlimerJS module once for faster load times
-	Thread.Create(initSlimerJS)
 	
 	return oc
 	
@@ -228,6 +230,7 @@ def ComingSoon(title, **kwargs):
 @route(PREFIX + "/episodedetail")
 def EpisodeDetail(title, url, **kwargs):
 	
+	Thread.Create(GetVideoUrl,{},url)
 	page_elems = HTML.ElementFromURL(url)
 	try:
 		thumb = "http:" + page_elems.xpath(".//section[@id='UIMovieSummary']//div[@class='block1']//@src")[0]
@@ -266,24 +269,13 @@ def EpisodeDetail(title, url, **kwargs):
 	#Log("url ------------------- " + url)
 	oc = ObjectContainer(title1 = unicode(title), art=thumb)
 	art = thumb
-	res = "fail"
 	
-	if url not in LAST_PROCESSED_URL:
-		#Log(url)
-		python_dir = Prefs['python_dir']
-		firefox_dir = Prefs['firefox_dir']
-		res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url)
-		if 'error-fail' not in res:
-			del LAST_PROCESSED_URL[:]
-			furl = json.loads(res)['MP4Link']
-			#Log("vidfile: " + furl)
-			LAST_PROCESSED_URL.append(url)
-			LAST_PROCESSED_URL.append(furl)
-		else:
-			Log(res)
-			return ObjectContainer(header=title, message=title + ' could not be fetched !')
-	else:
-		furl = LAST_PROCESSED_URL[1]
+	while VideoURL['GetVideoUrlComplete'] == 'False':
+		time.sleep(1)
+		
+	furl = VideoURL['GetVideoUrlComplete']
+	if 'error-fail' in furl:
+		return ObjectContainer(header=title, message=title + ' could not be fetched !')
 
 	try:
 		#Log("----------- url ----------------")
@@ -336,9 +328,36 @@ def EpisodeDetail(title, url, **kwargs):
 		
 # Initialize SlimerJS and dependencies at startup for faster load time later in use	
 def initSlimerJS():		
+	Log("Initializing SlimerJS")
 	python_dir = Prefs['python_dir']
 	firefox_dir = Prefs['firefox_dir']
 	res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url="https://einthusan.tv")
+	Log("Initialized SlimerJS " + res)
+	
+def GetVideoUrl(url):
+	Log("Running SlimerJS routine for : " + url)
+	VideoURL['GetVideoUrlComplete'] = 'False'
+	furl = 'error-fail'
+	
+	if url not in LAST_PROCESSED_URL:
+		del LAST_PROCESSED_URL[:]
+		#Log(url)
+		python_dir = Prefs['python_dir']
+		firefox_dir = Prefs['firefox_dir']
+		res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url)
+		if 'error-fail' not in res:
+			try:
+				furl = json.loads(res)['MP4Link']
+				#Log("vidfile: " + furl)
+				LAST_PROCESSED_URL.append(url)
+				LAST_PROCESSED_URL.append(furl)
+			except:
+				Log(res)
+		else:
+			Log(res)
+	else:
+		furl = LAST_PROCESSED_URL[1]
+	VideoURL['GetVideoUrlComplete'] = furl
 
 ######################################################################################
 # Loads bookmarked shows from Dict.  Titles are used as keys to store the show urls.
