@@ -20,7 +20,6 @@ def einthusan(python_dir, firefox_dir, url):
 		file_.write(decode_js)
 		file_.close()
 
-		SLIMERJSLAUNCHER = ""
 		if python_dir == None:
 			python_dir = ""
 		if firefox_dir == None or firefox_dir == "":
@@ -38,11 +37,4 @@ def einthusan(python_dir, firefox_dir, url):
 		return output
 	except Exception as err:
 		return "error-fail - code execution error - " + str(err)
-
-# Initialize SlimerJS and dependencies at startup for faster load time later in use	
-def init():
-	try:
-		einthusan("", "", "https://einthusan.tv")
-	except:
-		pass
 

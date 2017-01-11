@@ -70,7 +70,7 @@ def MainMenu():
 		oc.add(DirectoryObject(key = Callback(updater.menu, title='Update Plugin'), title = 'Update (Running Latest)', thumb = R(ICON_UPDATE)))
 		
 	# Initialize SlimerJS module once for faster load times
-	Thread.Create(slimerjs.init)
+	Thread.Create(initSlimerJS)
 	
 	return oc
 	
@@ -271,9 +271,8 @@ def EpisodeDetail(title, url, **kwargs):
 	if url not in LAST_PROCESSED_URL:
 		#Log(url)
 		python_dir = Prefs['python_dir']
-		firefox_dir = Prefs['python_dir']
+		firefox_dir = Prefs['firefox_dir']
 		res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url)
-		#Log(res)
 		if 'error-fail' not in res:
 			del LAST_PROCESSED_URL[:]
 			furl = json.loads(res)['MP4Link']
@@ -281,7 +280,8 @@ def EpisodeDetail(title, url, **kwargs):
 			LAST_PROCESSED_URL.append(url)
 			LAST_PROCESSED_URL.append(furl)
 		else:
-			return ObjectContainer(header=title, message=title + ' could not be fetched ! ' + res)
+			Log(res)
+			return ObjectContainer(header=title, message=title + ' could not be fetched !')
 	else:
 		furl = LAST_PROCESSED_URL[1]
 
@@ -334,6 +334,12 @@ def EpisodeDetail(title, url, **kwargs):
 
 	return oc
 		
+# Initialize SlimerJS and dependencies at startup for faster load time later in use	
+def initSlimerJS():		
+	python_dir = Prefs['python_dir']
+	firefox_dir = Prefs['firefox_dir']
+	res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url="https://einthusan.tv")
+
 ######################################################################################
 # Loads bookmarked shows from Dict.  Titles are used as keys to store the show urls.
 
