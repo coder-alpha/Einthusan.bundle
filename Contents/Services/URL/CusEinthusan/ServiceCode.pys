@@ -2,88 +2,90 @@
 
 """Einthusan.com ServiceCode"""
 
-BASE_URL = 'http://einthusan.com'
+BASE_URL = 'https://einthusan.tv'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0'
 HTTP.Headers['User-Agent'] = USER_AGENT
 HTTP.Headers['Referer'] = BASE_URL
 
 ####################################################################################################
-def MetadataObjectForURL(url):
+def NormalizeURL(url, **kwargs):
 
-	try:
-		url = url.split('+&+')[1]
-		html = HTML.ElementFromURL(url)
-	except:
-		raise Ex.MediaNotAvailable
+	return url
+####################################################################################################
+def MetadataObjectForURL(url, **kwargs):
 
-	# setup title, if none then video offline
-	title = html.xpath('//a[@class="movie-title"]/text()')
-	if not title:
-		raise Ex.MediaNotAvailable
-
+	data = get_data(url)
+	
+	furl = data['url']
+	title = data['title']
+	year = int(data['year'])
+	summary = data['summary']
+	thumb = data['thumb']
+	rating = float(data['rating'])
+	
 	# setup thumb with fallback
 	fallback = 'http://i.imgur.com/75YO83o.jpg'
-	thumb = html.xpath('//a[@class="movie-cover-wrapper"]/img/@src')
-	if not thumb:
-		thumb = html.xpath('//div[@class="video-object-thumb"]/a/@src')
-	thumb = thumb[0] if thumb else fallback
-	# for some strange reason einthusan sometimes uses urls with un-escaped spaces in them
-	thumb = thumb.replace(' ', '%20')
-	if not thumb.startswith('http'):
-		thumb = '{}/{}'.format(BASE_URL, thumb.split('/', 1)[1])
-
-	# setup summary
-	summary = html.xpath('//div[@class="movie-description"]//p[@class="desc_body"]/text()')
-	summary = summary[0].strip() if summary else None
-
+		
 	return VideoClipObject(
-		title=title[0].strip(),
-		summary=summary,
-		thumb=Resource.ContentsOfURLWithFallback([thumb, fallback])
-		)
-
+		title = title,
+		url = furl,
+		rating = rating,
+		summary = summary,
+		art = thumb,
+		year = year,
+		thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback=fallback)
+	)
+	
 ####################################################################################################
-def MediaObjectsForURL(url):
-
-	return [
-		MediaObject(
-			audio_channels=2,
-			parts=[PartObject(
-				key=HTTPLiveStreamURL(Callback(PlayVideo, url=url))
-				)]
+def MediaObjectsForURL(url, **kwargs):
+	
+	data = get_data(url)
+	furl = data['url']
+	
+	if '.flv' in furl:
+		return [
+			MediaObject(
+				container = Container.FLV,
+				video_codec = VideoCodec.H264,
+				audio_codec = AudioCodec.AAC,
+				audio_channels = 2,
+				optimized_for_streaming = True,
+				parts = [PartObject(key=Callback(PlayVideo, url=furl))]
+			)
+		]
+	elif '.m3u8' in furl:
+		return [
+			MediaObject(
+				protocol = 'hls',
+                container = 'mpegts',
+				audio_codec = AudioCodec.AAC,
+				audio_channels = 2,
+				optimized_for_streaming = True,
+				parts = [PartObject(key=Callback(PlayVideo, url=furl))]
+			)
+		]
+	else:
+		return [
+			MediaObject(
+				container = Container.MP4,
+				video_codec = VideoCodec.H264,
+				audio_codec = AudioCodec.AAC,
+				audio_channels = 2,
+				optimized_for_streaming = True,
+				parts = [PartObject(key=Callback(PlayVideo, url=furl))]
 			)
 		]
 
 ####################################################################################################
 @indirect
 def PlayVideo(url, **kwargs):
+	http_headers = {'User-Agent': USER_AGENT, 'Referer': BASE_URL}
+	if '.m3u8' in url:
+		return IndirectResponse(VideoClipObject, key=HTTPLiveStreamURL(url), http_headers=http_headers)
+	else:
+		return IndirectResponse(VideoClipObject, key=url, http_headers=http_headers)
 
-	# Plex transcoder will % encode user-agent causing the request to fail,
-	# No user-agent error when stream can be direct played
-	# Note: user-agent needs to be the same in the request and the VideoClipObject
-	#   because there is a hash tied to the requested user-agent
-	http_headers = {'User-Agent': USER_AGENT.split()[0]}
-	try:
-		page = HTTP.Request(url.split('+&+')[0], headers=http_headers, cacheTime=10).content
-	except:
-		raise Ex.MediaNotAvailable
-
-	return IndirectResponse(VideoClipObject, key=page.strip(), http_headers=http_headers)
 
 ####################################################################################################
-def TestURLs():
-
-	test_urls = list()
-	data = HTML.ElementFromURL('{}/movies/'.format(BASE_URL))
-
-	for video in data.xpath('//div[@class="video-listing"]'):
-		link = video.xpath('.//a/@href')[0]
-
-		if not link.startswith('http'):
-			link = '{}/{}'.foramt(BASE_URL, link.split('/',1)[1])
-		test_urls.append(link)
-
-		if len(test_urls) > 2:
-			break
-
-	return test_urls
+def get_data(url, **kwargs):
+	return JSON.ObjectFromString(D(url.split('einthusan://')[1]))
