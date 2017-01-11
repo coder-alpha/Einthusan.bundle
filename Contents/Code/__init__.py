@@ -47,9 +47,6 @@ def Start():
 	
 	# Initialize SlimerJS module once for faster load times
 	Thread.Create(initSlimerJS)
-	Log("Prefs:")
-	Log("Python directory: " + Prefs['python_dir'])
-	Log("Firefox directory: " + Prefs['firefox_dir'])
 	
 ######################################################################################
 # Menu hierarchy
@@ -331,6 +328,13 @@ def initSlimerJS():
 	Log("Initializing SlimerJS")
 	python_dir = Prefs['python_dir']
 	firefox_dir = Prefs['firefox_dir']
+	Log("Prefs:")
+	if python_dir == None:
+		python_dir = ""
+	if firefox_dir == None:
+		firefox_dir = ""
+	Log("Python directory: " + python_dir)
+	Log("Firefox directory: " + firefox_dir)
 	res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url="https://einthusan.tv")
 	Log("Initialized SlimerJS " + res)
 	
