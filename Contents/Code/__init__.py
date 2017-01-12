@@ -349,9 +349,10 @@ def GetVideoUrl(url):
 		python_dir = Prefs['python_dir']
 		firefox_dir = Prefs['firefox_dir']
 		res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url)
-		if 'error-fail' not in res:
+		if 'error-fail' not in res and 'MP4Link' in res:
 			try:
-				furl = json.loads(res)['MP4Link']
+				res2 = "{" + find_between( res, "{", "}" ) + "}"
+				furl = json.loads(res2)['MP4Link']
 				#Log("vidfile: " + furl)
 				LAST_PROCESSED_URL.append(url)
 				LAST_PROCESSED_URL.append(furl)
@@ -362,6 +363,14 @@ def GetVideoUrl(url):
 	else:
 		furl = LAST_PROCESSED_URL[1]
 	VideoURL['GetVideoUrlComplete'] = furl
+
+def find_between( s, first, last ):
+    try:
+        start = s.rindex( first ) + len( first )
+        end = s.rindex( last, start )
+        return s[start:end]
+    except ValueError:
+        return ""
 
 ######################################################################################
 # Loads bookmarked shows from Dict.  Titles are used as keys to store the show urls.

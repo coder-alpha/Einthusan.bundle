@@ -29,11 +29,16 @@ def einthusan(python_dir, firefox_dir, url):
 				os.environ["SLIMERJSLAUNCHER"] = firefox_dir
 			elif sys.platform == "win32":
 				os.environ["SLIMERJSLAUNCHER"] = os.path.join(firefox_dir, 'firefox.exe')
+			else:
+				os.environ["SLIMERJSLAUNCHER"] = firefox_dir
 
 		file_cmd = python_dir + "python " + (os.path.join("\""+SLIMERJS_PATH, 'slimerjs.py"') + " " + os.path.join("\""+SLIMERJS_PATH, 'einthusan.js"'))
-		output = subprocess.check_output(file_cmd, shell=False)
+		output = "\nOutput from SlimerJS: \n" + subprocess.check_output(file_cmd, shell=False)
 		#subprocess.Popen("cmd " + file_cmd, bufsize=10480, executable=None, stdin=None, stdout=None, stderr=None, preexec_fn=None, close_fds=False, shell=False, cwd=None, env=None, universal_newlines=False, startupinfo=None, creationflags=0)
-		os.remove(os.path.join(SLIMERJS_PATH, 'einthusan.js'))
+		try:
+			os.remove(os.path.join(SLIMERJS_PATH, 'einthusan.js'))
+		except Exception as err:
+			output = str(err) + " " + output
 		return output
 	except Exception as err:
 		return "error-fail - code execution error - " + str(err)
