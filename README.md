@@ -11,6 +11,7 @@ System Requirements
 - **Plex Media Server:**
 	- Tested Working:
 		- Windows
+		- Linux (Ubuntu 14.04LTS) - requires 'xvfb' to be installed
 - **Plex Clients:**
 	- Tested Working:
 		- Plex Home Theater
@@ -34,12 +35,12 @@ How To Install
 	- Mac/Linux: 
         ~/Library/Application Support/Plex Media Server/Plug-ins
 - Restart PMS
-- Set paths to Python and Firefox in the channel preferences
+- Set paths to Python and Firefox in the channel preferences (not required if their paths are defined under system's env. variables)
 
 Known Issues
 ==============
 
-- None as of now.
+- Some Mac/Linux distributions of PMS have a SSL/TLS issue - to circumvent it use proxy connection option under channel prefs. Read more on the support thread mentioned above.
 
 Acknowledgements
 ==============

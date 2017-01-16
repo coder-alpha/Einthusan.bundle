@@ -2,9 +2,7 @@
 
 import os, sys
 import subprocess
-import base64
 
-JS = "dmFyIF8weDRmYjQ9WyJceDU4XHg1OFx4NThceDU4IiwiXHg2M1x4NzJceDY1XHg2MVx4NzRceDY1IiwiXHg3N1x4NjVceDYyXHg3MFx4NjFceDY3XHg2NSIsIlx4NjNceDYxXHg3MFx4NzRceDc1XHg3Mlx4NjVceDQzXHg2Rlx4NkVceDc0XHg2NVx4NkVceDc0IiwiXHg2Rlx4NkVceDUyXHg2NVx4NzNceDZGXHg3NVx4NzJceDYzXHg2NVx4NTJceDY1XHg2M1x4NjVceDY5XHg3Nlx4NjVceDY0IiwiXHg3M1x4NzRceDYxXHg2N1x4NjUiLCJceDY1XHg2RVx4NjQiLCJceDYyXHg2Rlx4NjRceDc5XHg1M1x4NjlceDdBXHg2NSIsIlx4NjFceDZBXHg2MVx4NzhceDJGXHg2RFx4NkZceDc2XHg2OVx4NjVceDJGXHg3N1x4NjFceDc0XHg2M1x4NjgiLCJceDY5XHg2RVx4NjRceDY1XHg3OFx4NEZceDY2IiwiXHg3NVx4NzJceDZDIiwiXHg0NVx4NEFceDRDXHg2OVx4NkVceDZCXHg3MyIsIlx4NjJceDZGXHg2NFx4NzkiLCJceDQ0XHg2MVx4NzRceDYxIiwiXHg3MFx4NjFceDcyXHg3M1x4NjUiLCJceDc1XHgzMFx4MzBceDMyXHgzNiIsIlx4MjYiLCJceDVDXHg1QyIsIiIsIlx4NkNceDZGXHg2NyIsIlx4NjVceDc4XHg2OVx4NzQiLCJceDZGXHg3MFx4NjVceDZFIiwiXHg2Rlx4NkVceDQ5XHg2RVx4NjlceDc0XHg2OVx4NjFceDZDXHg2OVx4N0FceDY1XHg2NCIsIlx4NjVceDcyXHg3Mlx4NkZceDcyXHgyRFx4NjZceDYxXHg2OVx4NkNceDIwXHg2RVx4NkZceDc0XHgyMFx4NjZceDZGXHg3NVx4NkVceDY0IiwiXHg2NFx4NjVceDYzXHg3Mlx4NzlceDcwXHg3NCIsIlx4NDFceDQyXHg0M1x4NDRceDQ1XHg0Nlx4NDdceDQ4XHg0OVx4NEFceDRCXHg0Q1x4NERceDRFXHg0Rlx4NTBceDUxXHg1Mlx4NTNceDU0XHg1NVx4NTZceDU3XHg1OFx4NTlceDVBXHg2MVx4NjJceDYzXHg2NFx4NjVceDY2XHg2N1x4NjhceDY5XHg2QVx4NkJceDZDXHg2RFx4NkVceDZGXHg3MFx4NzFceDcyXHg3M1x4NzRceDc1XHg3Nlx4NzdceDc4XHg3OVx4N0FceDMwXHgzMVx4MzJceDMzXHgzNFx4MzVceDM2XHgzN1x4MzhceDM5IiwiXHg3Mlx4NjFceDZFXHg2NFx4NkZceDZEIiwiXHg2Q1x4NjVceDZFXHg2N1x4NzRceDY4IiwiXHg2Nlx4NkNceDZGXHg2Rlx4NzIiLCJceDYzXHg2OFx4NjFceDcyXHg0MVx4NzQiLCJceDczXHg2Q1x4NjlceDYzXHg2NSIsIlx4NjciLCJceDcyXHg2NVx4NzBceDZDXHg2MVx4NjNceDY1Il07dmFyIHVybD1fMHg0ZmI0WzBdO3ZhciBwYWdlPXJlcXVpcmUoXzB4NGZiNFsyXSlbXzB4NGZiNFsxXV0oKTtwYWdlW18weDRmYjRbM11dPSBbLy4qL107cGFnZVtfMHg0ZmI0WzRdXT0gZnVuY3Rpb24oXzB4NjhlMXgzKXtpZihfMHg2OGUxeDNbXzB4NGZiNFs1XV0hPSBfMHg0ZmI0WzZdfHwgIV8weDY4ZTF4M1tfMHg0ZmI0WzddXSl7cmV0dXJufTtpZihfMHg2OGUxeDNbXzB4NGZiNFsxMF1dW18weDRmYjRbOV1dKF8weDRmYjRbOF0pPiAtMSYmIF8weDY4ZTF4M1tfMHg0ZmI0WzEyXV1bXzB4NGZiNFs5XV0oXzB4NGZiNFsxMV0pPiAgLTEpe3ZhciBfMHg2OGUxeDQ9dGVzdChKU09OW18weDRmYjRbMTRdXShfMHg2OGUxeDNbXzB4NGZiNFsxMl1dKVtfMHg0ZmI0WzEzXV1bXzB4NGZiNFsxMV1dKTtfMHg2OGUxeDQ9IGF0b2IoXzB4NjhlMXg0KTtfMHg2OGUxeDQ9IHJlcGxhY2VhbGwoXzB4NjhlMXg0LF8weDRmYjRbMTVdLF8weDRmYjRbMTZdKTtfMHg2OGUxeDQ9IHJlcGxhY2VhbGwoXzB4NjhlMXg0LF8weDRmYjRbMTddLF8weDRmYjRbMThdKTtjb25zb2xlW18weDRmYjRbMTldXShfMHg2OGUxeDQpO3NsaW1lcltfMHg0ZmI0WzIwXV0oKX19O3BhZ2VbXzB4NGZiNFsyMV1dKHVybCxmdW5jdGlvbigpe3BoYW50b21bXzB4NGZiNFsyMF1dKCl9KTtwYWdlW18weDRmYjRbMjJdXT0gZnVuY3Rpb24oKXtzZXRUaW1lb3V0KGZ1bmN0aW9uKCl7Y29uc29sZVtfMHg0ZmI0WzE5XV0oXzB4NGZiNFsyM10pO3NsaW1lcltfMHg0ZmI0WzIwXV0oKX0sMjAwMDApfTtmdW5jdGlvbiB0ZXN0KF8weDY4ZTF4Nil7dmFyIF8weDY4ZTF4Nz0gbmV3IGpzb25jcnlwdG87bj0gXzB4NjhlMXg3W18weDRmYjRbMjRdXShfMHg2OGUxeDYpO3JldHVybiBufWZ1bmN0aW9uIGpzb25jcnlwdG8oKXt2YXIgXzB4NjhlMXg5PWZ1bmN0aW9uKF8weDY4ZTF4OSl7Zm9yKHZhciBfMHg2OGUxeGE9XzB4NGZiNFsxOF0sXzB4NjhlMXhiPV8weDRmYjRbMjVdLF8weDY4ZTF4Nz0wO18weDY4ZTF4NzwgXzB4NjhlMXg5O18weDY4ZTF4NysrKXtfMHg2OGUxeGErPSBfMHg2OGUxeGJbXzB4NGZiNFsyOV1dKE1hdGhbXzB4NGZiNFsyOF1dKE1hdGhbXzB4NGZiNFsyNl1dKCkqIF8weDY4ZTF4YltfMHg0ZmI0WzI3XV0pKX07cmV0dXJuIF8weDY4ZTF4YX07dGhpc1tfMHg0ZmI0WzI0XV09IGZ1bmN0aW9uKF8weDY4ZTF4OSl7dmFyIF8weDY4ZTF4YT0xMCxfMHg2OGUxeGI9XzB4NjhlMXg5W18weDRmYjRbMzBdXSgwLF8weDY4ZTF4YSkrIF8weDY4ZTF4OVtfMHg0ZmI0WzMwXV0oXzB4NjhlMXg5W18weDRmYjRbMjddXS0gMSkrIF8weDY4ZTF4OVtfMHg0ZmI0WzMwXV0oXzB4NjhlMXhhKyAyLF8weDY4ZTF4OVtfMHg0ZmI0WzI3XV0tIDEpLF8weDY4ZTF4Nz0oXzB4NjhlMXhiKTtyZXR1cm4gXzB4NjhlMXg3fX1mdW5jdGlvbiByZXBsYWNlYWxsKF8weDY4ZTF4ZCxfMHg2OGUxeGUsXzB4NjhlMXhmKXtyZXR1cm4gXzB4NjhlMXhkW18weDRmYjRbMzJdXSggbmV3IFJlZ0V4cChfMHg2OGUxeGUsXzB4NGZiNFszMV0pLF8weDY4ZTF4Zil9"
 
 __title__ = "slimerjs"
 __version__ = "0.10.2"
@@ -12,14 +10,11 @@ __credits__ = [
     "Coder Alpha"
 ]
 
-def einthusan(python_dir, firefox_dir, url):
+def einthusan(python_dir, firefox_dir, url, debug=False):
+	output = ""
 	try:
-		decode_js = base64.b64decode(JS).replace('_0x4fb4[0]','"'+url+'"')
 		SLIMERJS_PATH = os.path.dirname(os.path.abspath(__file__))
-		file_ = open(os.path.join(SLIMERJS_PATH, 'einthusan.js'), 'w')
-		file_.write(decode_js)
-		file_.close()
-
+		
 		if python_dir == None:
 			python_dir = ""
 		if firefox_dir == None or firefox_dir == "":
@@ -32,14 +27,37 @@ def einthusan(python_dir, firefox_dir, url):
 			else:
 				os.environ["SLIMERJSLAUNCHER"] = firefox_dir
 
-		file_cmd = python_dir + "python " + (os.path.join("\""+SLIMERJS_PATH, 'slimerjs.py"') + " " + os.path.join("\""+SLIMERJS_PATH, 'einthusan.js"'))
-		output = "\nOutput from SlimerJS: \n" + subprocess.check_output(file_cmd, shell=False)
-		#subprocess.Popen("cmd " + file_cmd, bufsize=10480, executable=None, stdin=None, stdout=None, stderr=None, preexec_fn=None, close_fds=False, shell=False, cwd=None, env=None, universal_newlines=False, startupinfo=None, creationflags=0)
-		try:
-			os.remove(os.path.join(SLIMERJS_PATH, 'einthusan.js'))
-		except Exception as err:
-			output = str(err) + " " + output
+		if debug:
+			if sys.platform == "win32":
+				file_cmd = [os.path.join(python_dir , 'python'),os.path.join(SLIMERJS_PATH, 'slimerjs.py'),os.path.join(SLIMERJS_PATH, 'einthusan.js'),url,'-debug true']
+			elif sys.platform == "darwin":
+				file_cmd = [os.path.join(python_dir , 'python'),os.path.join(SLIMERJS_PATH, 'slimerjs.py'),os.path.join(SLIMERJS_PATH, 'einthusan.js'),url,'--debug=true']
+			elif sys.platform == "linux" or sys.platform == "linux2":
+				file_cmd = ['xvfb-run', os.path.join(python_dir , 'python'),os.path.join(SLIMERJS_PATH, 'slimerjs.py'),os.path.join(SLIMERJS_PATH, 'einthusan.js'),url,'--debug=true']
+			else:
+				file_cmd = [os.path.join(python_dir , 'python'),os.path.join(SLIMERJS_PATH, 'slimerjs.py'),os.path.join(SLIMERJS_PATH, 'einthusan.js'),url,'--debug=true']
+		else:
+			if sys.platform == "win32":
+				file_cmd = [os.path.join(python_dir , 'python'),os.path.join(SLIMERJS_PATH, 'slimerjs.py'),os.path.join(SLIMERJS_PATH, 'einthusan.js'),url]
+			elif sys.platform == "darwin":
+				file_cmd = [os.path.join(python_dir , 'python'),os.path.join(SLIMERJS_PATH, 'slimerjs.py'),os.path.join(SLIMERJS_PATH, 'einthusan.js'),url]
+			elif sys.platform == "linux" or sys.platform == "linux2":
+				file_cmd = ['xvfb-run', os.path.join(python_dir , 'python'),os.path.join(SLIMERJS_PATH, 'slimerjs.py'),os.path.join(SLIMERJS_PATH, 'einthusan.js'),url]
+			else:
+				file_cmd = [os.path.join(python_dir , 'python'),os.path.join(SLIMERJS_PATH, 'slimerjs.py'),os.path.join(SLIMERJS_PATH, 'einthusan.js'),url]
+			
+		# fix possible path issues
+		file_cmd[0] = file_cmd[0].replace('pythonpython','python').replace('python/python','python').replace('python\python','python').replace('python\/python','python')
+		
+		process = subprocess.Popen(file_cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+		ret = process.wait()
+		print('Process returned code {0}'.format(ret))
+		output = process.stdout.read()
 		return output
 	except Exception as err:
-		return "error-fail - code execution error - " + str(err)
+		return "error-fail - code execution error - " + str(err) + " " + output + str(file_cmd)
 
+def test():
+	print einthusan("","","https://einthusan.tv/movie/watch/7757/?lang=hindi", debug=True)
+	
+test()
