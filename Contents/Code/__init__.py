@@ -37,6 +37,7 @@ VideoURL = {}
 EINTHUSAN_SERVERS = ["Dallas","Washington","San Jose","Somerville","Toronto","London","Sydney"]
 EINTHUSAN_SERVER_INFO = {}
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0"
+SLIMERJS_INIT = []
 
 
 ######################################################################################
@@ -53,13 +54,10 @@ def Start():
 	
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = USER_AGENT
-	HTTP.Headers['Referer'] = 'http://www.einthusan.tv'
+	HTTP.Headers['Referer'] = BASE_URL
 	
 	LAST_PROCESSED_URL = []
 	VideoURL = {}
-	
-	# Initialize SlimerJS module once for faster load times
-	Thread.Create(initSlimerJS)
 	
 	# Initialize Server Info Thread once
 	Thread.Create(AddSourceInfo)
@@ -69,6 +67,11 @@ def Start():
 
 @handler(PREFIX, TITLE, art=ART, thumb=ICON)
 def MainMenu():
+
+	if len(SLIMERJS_INIT) == 0:
+		# Initialize SlimerJS module once for faster load times
+		Thread.Create(initSlimerJS)
+		SLIMERJS_INIT.append('True')
 	
 	defaultLang = Prefs['langPref']
 	
@@ -316,6 +319,9 @@ def EpisodeDetail(title, url, **kwargs):
 		
 	furl = VideoURL['GetVideoUrlComplete']
 	datacenter = VideoURL['GetVideoUrlDatacenter']
+	# fix San Jose datacenter label
+	if datacenter == 'San':
+		datacenter = 'San Jose'
 	
 	if 'error-fail' in furl:
 		return ObjectContainer(header=title, message=title + ' could not be fetched !')
@@ -441,6 +447,10 @@ def GetVideoUrl(url):
 	else:
 		furl = LAST_PROCESSED_URL[1]
 		datacenter = LAST_PROCESSED_URL[2]
+		
+	# fix San Jose datacenter label
+	if datacenter == 'San':
+		datacenter = 'San Jose'
 	VideoURL['GetVideoUrlComplete'] = furl
 	VideoURL['GetVideoUrlDatacenter'] = datacenter
 
@@ -489,19 +499,35 @@ def AllAvailableSources2(furl, title, summary, thumb, year, rating, art, locatio
 @route(PREFIX + "/AvailableSourceFrom")
 def AvailableSourceFrom(furl, location):
 
-	vidpath = furl.split('.tv/')[1]
-	choice_str = str(random.choice(EINTHUSAN_SERVER_INFO[location]["Servers"]))
+	# fix San Jose datacenter label
+	if location == 'San':
+		location = 'San Jose'
+	
+	try:
+		vidpath = furl.split('.tv/')[1]
+		choice_str = str(random.choice(EINTHUSAN_SERVER_INFO[location]["Servers"]))
+	except:
+		choice_str = '1'
+		
 	url = ("https://s" + choice_str + ".einthusan.tv/" + vidpath)
 	ret_code = GetHttpStatus(url=url)
+	
 	return url, choice_str, ret_code
 
 @route(PREFIX + "/DetermineCurrentServer")
 def DetermineCurrentServer(furl, location):
 	server_n = furl.split('.einthusan.tv')[0].strip('https://s')
-
-	for idx in EINTHUSAN_SERVER_INFO[location]["Servers"]:
-		if idx == int(server_n):
-			return str(idx)
+	
+	# fix San Jose datacenter label
+	if location == 'San':
+		location = 'San Jose'
+	
+	try:
+		for idx in EINTHUSAN_SERVER_INFO[location]["Servers"]:
+			if idx == int(server_n):
+				return str(idx)
+	except:
+		pass
 	
 	Log("Unknown Server: Wrong assignment in constant EINTHUSAN_SERVER_INFO")
 	Log(location)	

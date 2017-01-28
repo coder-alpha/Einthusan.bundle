@@ -60,4 +60,4 @@ def einthusan(python_dir, firefox_dir, url, debug=False):
 def test():
 	print einthusan("","","https://einthusan.tv/movie/watch/7757/?lang=hindi", debug=True)
 	
-test()
+#test()
