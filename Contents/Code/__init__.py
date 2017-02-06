@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 ######################################################################################
 #
 #	Einthusan.com / Einthusan.tv
@@ -38,6 +41,7 @@ EINTHUSAN_SERVERS = ["Dallas","Washington","San Jose","Somerville","Toronto","Lo
 EINTHUSAN_SERVER_INFO = {}
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0"
 SLIMERJS_INIT = []
+SERVER_OFFSET = []
 
 
 ######################################################################################
@@ -58,6 +62,19 @@ def Start():
 	
 	LAST_PROCESSED_URL = []
 	VideoURL = {}
+	
+	Log("Prefs:")
+	Log("OS: " + sys.platform)
+	firefox_dir = Prefs['firefox_dir']
+	if firefox_dir == None:
+		firefox_dir = ""
+	Log("Firefox directory: " + str(firefox_dir))
+	
+	python_dir = Prefs['python_dir']
+	if python_dir == None:
+		python_dir = ""
+	Log("Python directory: " + str(python_dir))
+	Log(common.TITLE + ' v.' + common.VERSION)
 	
 	# Initialize Server Info Thread once
 	Thread.Create(AddSourceInfo)
@@ -399,16 +416,13 @@ def EpisodeDetail(title, url, **kwargs):
 # Initialize SlimerJS and dependencies at startup for faster load time later in use	
 def initSlimerJS():		
 	Log("Initializing SlimerJS")
-	python_dir = Prefs['python_dir']
 	firefox_dir = Prefs['firefox_dir']
-	Log("Prefs:")
-	if python_dir == None:
-		python_dir = ""
 	if firefox_dir == None:
 		firefox_dir = ""
-	Log("OS: " + sys.platform)
-	Log("Python directory: " + python_dir)
-	Log("Firefox directory: " + firefox_dir)
+	python_dir = Prefs['python_dir']
+	if python_dir == None:
+		python_dir = ""
+	
 	res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url="https://einthusan.tv")
 	if res == "":
 		res = "Success"
@@ -425,8 +439,8 @@ def GetVideoUrl(url):
 	if url not in LAST_PROCESSED_URL:
 		del LAST_PROCESSED_URL[:]
 		#Log(url)
-		python_dir = Prefs['python_dir']
 		firefox_dir = Prefs['firefox_dir']
+		python_dir = Prefs['python_dir']
 		res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url, debug=debug)
 		if 'error-fail' not in res and 'MP4Link' in res:
 			try:
@@ -439,11 +453,11 @@ def GetVideoUrl(url):
 				LAST_PROCESSED_URL.append(furl)
 				LAST_PROCESSED_URL.append(datacenter)
 				if debug:
-					Log(res)
+					Log("Output:"+res)
 			except:
-				Log(res)
+				Log("Error: No Video link. Output:" + res)
 		else:
-			Log(res)
+			Log("Output:"+res)
 	else:
 		furl = LAST_PROCESSED_URL[1]
 		datacenter = LAST_PROCESSED_URL[2]
@@ -483,13 +497,13 @@ def AllAvailableSources2(furl, title, summary, thumb, year, rating, art, locatio
 	vidpath = furl.split('.tv/')[1]
 
 	for idx in EINTHUSAN_SERVER_INFO[location]["Servers"]:
-		furl = ("https://s" + str(idx) + ".einthusan.tv/" + vidpath)
+		furl = ("https://s" + str(idx+SERVER_OFFSET[0]) + ".einthusan.tv/" + vidpath)
 		ret_code = GetHttpStatus(url=furl)
 		if ret_code == "200":
 			oc.add(VideoClipObject(
 				url = "einthusan://" + E(JSON.StringFromObject({"url":furl, "title": title, "summary": summary, "thumb": thumb, "year": year, "rating": rating})),
 				art = art,
-				title = unicode(title + " (Server ID:" + str(idx) + ")"),
+				title = unicode(title + " (Server ID:" + str(idx+SERVER_OFFSET[0]) + ")"),
 				thumb = thumb,
 				summary = summary
 				)
@@ -505,7 +519,7 @@ def AvailableSourceFrom(furl, location):
 	
 	try:
 		vidpath = furl.split('.tv/')[1]
-		choice_str = str(random.choice(EINTHUSAN_SERVER_INFO[location]["Servers"]))
+		choice_str = str(random.choice(EINTHUSAN_SERVER_INFO[location]["Servers"]) + SERVER_OFFSET[0])
 	except:
 		choice_str = '1'
 		
@@ -518,13 +532,19 @@ def AvailableSourceFrom(furl, location):
 def DetermineCurrentServer(furl, location):
 	server_n = furl.split('.einthusan.tv')[0].strip('https://s')
 	
+	del SERVER_OFFSET[:]
+	if int(server_n) > 100:
+		SERVER_OFFSET.append(100)
+	else:
+		SERVER_OFFSET.append(0)
+	
 	# fix San Jose datacenter label
 	if location == 'San':
 		location = 'San Jose'
 	
 	try:
 		for idx in EINTHUSAN_SERVER_INFO[location]["Servers"]:
-			if idx == int(server_n):
+			if idx == int(server_n) + SERVER_OFFSET[0]:
 				return str(idx)
 	except:
 		pass
@@ -532,7 +552,7 @@ def DetermineCurrentServer(furl, location):
 	Log("Unknown Server: Wrong assignment in constant EINTHUSAN_SERVER_INFO")
 	Log(location)	
 	Log(server_n)
-	return "Unknown"
+	return server_n
 	
 def AddSourceInfo():
 	US_FLAG = "https://cdn4.iconfinder.com/data/icons/popular-flags-1/614/2_-_United_States-512.png"
