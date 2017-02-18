@@ -8,7 +8,7 @@
 ######################################################################################
 
 import common, updater, urllib2, time, sys, random
-import slimerjs, json
+import slimerjs, json, einthusan
 
 TITLE = common.TITLE
 PREFIX = common.PREFIX
@@ -39,7 +39,7 @@ LAST_PROCESSED_URL = []
 VideoURL = {}
 EINTHUSAN_SERVERS = ["Dallas","Washington","San Jose","Somerville","Toronto","London","Sydney"]
 EINTHUSAN_SERVER_INFO = {}
-USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0"
+
 SLIMERJS_INIT = []
 SERVER_OFFSET = []
 
@@ -57,7 +57,7 @@ def Start():
 	VideoClipObject.art = R(ART)
 	
 	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = USER_AGENT
+	HTTP.Headers['User-Agent'] = common.USER_AGENT
 	HTTP.Headers['Referer'] = BASE_URL
 	
 	LAST_PROCESSED_URL = []
@@ -85,7 +85,7 @@ def Start():
 @handler(PREFIX, TITLE, art=ART, thumb=ICON)
 def MainMenu():
 
-	if len(SLIMERJS_INIT) == 0:
+	if Prefs["use_slimerjs"] and len(SLIMERJS_INIT) == 0:
 		# Initialize SlimerJS module once for faster load times
 		Thread.Create(initSlimerJS)
 		SLIMERJS_INIT.append('True')
@@ -283,6 +283,7 @@ def ComingSoon(title, **kwargs):
 @route(PREFIX + "/episodedetail")
 def EpisodeDetail(title, url, **kwargs):
 	
+	
 	Thread.Create(GetVideoUrl,{},url)
 	
 	if Prefs["use_proxy"]:
@@ -333,6 +334,7 @@ def EpisodeDetail(title, url, **kwargs):
 		timer += 1
 		if timer > 20: # using 20 sec. timeout
 			return ObjectContainer(header=title, message=title + ' : Timeout error occurred !')
+	
 		
 	furl = VideoURL['GetVideoUrlComplete']
 	datacenter = VideoURL['GetVideoUrlDatacenter']
@@ -430,7 +432,7 @@ def initSlimerJS():
 	
 @route(PREFIX + "/GetVideoUrl")
 def GetVideoUrl(url):
-	Log("Running SlimerJS routine for : " + url)
+
 	VideoURL['GetVideoUrlComplete'] = 'False'
 	furl = 'error-fail'
 	datacenter = 'Unknown'
@@ -438,14 +440,22 @@ def GetVideoUrl(url):
 	
 	if url not in LAST_PROCESSED_URL:
 		del LAST_PROCESSED_URL[:]
-		#Log(url)
-		firefox_dir = Prefs['firefox_dir']
-		python_dir = Prefs['python_dir']
-		res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url, debug=debug)
+		
+		if Prefs["use_slimerjs"]:
+			if debug:
+				Log("Running SlimerJS routine for : " + url)
+			firefox_dir = Prefs['firefox_dir']
+			python_dir = Prefs['python_dir']
+			res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url, debug=debug)
+			res = "{" + find_between( res, "{", "}" ) + "}"
+		else:
+			if debug:
+				Log("Internal routine for : %s" % url)
+			res = einthusan.GetEinthusanData(url=url, debug=debug)
+			
 		if 'error-fail' not in res and 'MP4Link' in res:
 			try:
-				res2 = "{" + find_between( res, "{", "}" ) + "}"
-				res2 = json.loads(res2)
+				res2 = json.loads(res)
 				furl = res2['MP4Link']
 				datacenter = res2["Datacenter"]
 				#Log("vidfile: " + furl)
@@ -453,11 +463,11 @@ def GetVideoUrl(url):
 				LAST_PROCESSED_URL.append(furl)
 				LAST_PROCESSED_URL.append(datacenter)
 				if debug:
-					Log("Output:"+res)
+					Log("Output: %s" % res)
 			except:
-				Log("Error: No Video link. Output:" + res)
+				Log("Error: No Video link. Output: %s" % res)
 		else:
-			Log("Output:"+res)
+			Log("Output: %s" % res)
 	else:
 		furl = LAST_PROCESSED_URL[1]
 		datacenter = LAST_PROCESSED_URL[2]
@@ -544,8 +554,8 @@ def DetermineCurrentServer(furl, location):
 	
 	try:
 		for idx in EINTHUSAN_SERVER_INFO[location]["Servers"]:
-			if idx == int(server_n) + SERVER_OFFSET[0]:
-				return str(idx)
+			if (int(idx) + int(SERVER_OFFSET[0])) == int(server_n):
+				return str(int(idx)+int(SERVER_OFFSET[0]))
 	except:
 		pass
 	
@@ -792,7 +802,7 @@ def GetRedirector(url, **kwargs):
 @route(PREFIX + '/gethttpstatus')
 def GetHttpStatus(url):
 	try:
-		headers = {'User-Agent': USER_AGENT,
+		headers = {'User-Agent': common.USER_AGENT,
 		   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 		   'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
 		   'Accept-Encoding': 'none',
