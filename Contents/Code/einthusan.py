@@ -23,7 +23,7 @@ def encodeEInth(lnk):
 	r=lnk[0:t]+lnk[-1]+lnk[t+2:-1]
 	return r
 	
-def request(url, cookieJar=None, post=None, timeout=20, headers=None, jsonpost=False, https_skip=False):
+def request(url, cookieJar=None, post=None, timeout=20, headers=None, jsonpost=False, https_skip=False, output=None):
 
 	cookie_handler = urllib2.HTTPCookieProcessor(cookieJar)
 	
@@ -61,6 +61,11 @@ def request(url, cookieJar=None, post=None, timeout=20, headers=None, jsonpost=F
 	if jsonpost:
 		req.add_header('Content-Type', 'application/json')
 	response = opener.open(req,post,timeout=timeout)
+	
+	if output !=None and output=='responsecode':
+		resp = str(response.getcode())
+		return resp
+	
 	if response.info().get('Content-Encoding') == 'gzip':
 			from StringIO import StringIO
 			import gzip
@@ -79,10 +84,10 @@ def parseUrl(url):
 	
 	return id, lang
 	
-def requestWithHeaders(url):
+def requestWithHeaders(url, output=None):
 	cookieJar = cookielib.LWPCookieJar()	
 	headers=[('Origin','https://einthusan.tv'),('Referer','https://einthusan.tv/movie/browse/?lang=hindi'),('User-Agent',USER_AGENT)]
-	htm=request(url,headers=headers,cookieJar=cookieJar)
+	htm=request(url,headers=headers,cookieJar=cookieJar,output=output)
 	return htm
 
 def GetEinthusanData(url, debug=False):

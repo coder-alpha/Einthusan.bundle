@@ -494,7 +494,7 @@ def AllAvailableSources(furl, title, summary, thumb, year, rating, art):
 			title = location_with_state_country,
 			art = art,
 			summary = "Play using " + location_with_state_country + " server",
-			thumb = EINTHUSAN_SERVER_INFO[location]["Flag"]
+			thumb = R(EINTHUSAN_SERVER_INFO[location]["Flag"])
 			)
 		)
 		
@@ -565,10 +565,10 @@ def DetermineCurrentServer(furl, location):
 	return server_n
 	
 def AddSourceInfo():
-	US_FLAG = "https://cdn4.iconfinder.com/data/icons/popular-flags-1/614/2_-_United_States-512.png"
-	UK_FLAG = "https://cdn4.iconfinder.com/data/icons/flat-flags-part-one/512/GreatBritain512x512.png"
-	CAN_FLAG = "https://cdn4.iconfinder.com/data/icons/flat-flags-part-one/512/Canada512x512.png"
-	AUS_FLAG = "https://cdn4.iconfinder.com/data/icons/flat-flags-part-one/512/Australia512x512.png"
+	US_FLAG = "icon-us.png"
+	UK_FLAG = "icon-uk.png"
+	CAN_FLAG = "icon-can.png"
+	AUS_FLAG = "icon-aus.png"
 	
 	EINTHUSAN_SERVER_INFO["Dallas"] = {}
 	EINTHUSAN_SERVER_INFO["Dallas"]["Servers"]=[23,24,25,29,30,31,35,36,37,38,45]
@@ -799,31 +799,34 @@ def GetRedirector(url, **kwargs):
 @route(PREFIX + '/gethttpstatus')
 def GetHttpStatus(url):
 	try:
-		headers = {'User-Agent': common.USER_AGENT,
-		   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-		   'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-		   'Accept-Encoding': 'none',
-		   'Accept-Language': 'en-US,en;q=0.8',
-		   'Connection': 'keep-alive',
-		   'Referer': url}
-	   
-		if '|' in url:
-			url_split = url.split('|')
-			url = url_split[0]
-			headers['Referer'] = url
-			for params in url_split:
-				if '=' in params:
-					param_split = params.split('=')
-					param = param_split[0].strip()
-					param_val = urllib2.quote(param_split[1].strip(), safe='/=&')
-					headers[param] = param_val
-
-		if 'http://' in url or 'https://' in url:
-			req = urllib2.Request(url, headers=headers)
-			conn = urllib2.urlopen(req, timeout=10)
-			resp = str(conn.getcode())
+		if Prefs["use_https_alt"]:
+			resp = einthusan.requestWithHeaders(url, output='responsecode')
 		else:
-			resp = '200'
+			headers = {'User-Agent': common.USER_AGENT,
+			   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+			   'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+			   'Accept-Encoding': 'none',
+			   'Accept-Language': 'en-US,en;q=0.8',
+			   'Connection': 'keep-alive',
+			   'Referer': url}
+		   
+			if '|' in url:
+				url_split = url.split('|')
+				url = url_split[0]
+				headers['Referer'] = url
+				for params in url_split:
+					if '=' in params:
+						param_split = params.split('=')
+						param = param_split[0].strip()
+						param_val = urllib2.quote(param_split[1].strip(), safe='/=&')
+						headers[param] = param_val
+
+			if 'http://' in url or 'https://' in url:
+				req = urllib2.Request(url, headers=headers)
+				conn = urllib2.urlopen(req, timeout=10)
+				resp = str(conn.getcode())
+			else:
+				resp = '200'
 	except Exception as e:
 		resp = '0'
 		if Prefs['use_debug']:
