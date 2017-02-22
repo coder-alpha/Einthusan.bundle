@@ -35,7 +35,7 @@ def einthusan(python_dir, firefox_dir, url, debug=False):
 			elif sys.platform == "darwin":
 				file_cmd = [os.path.join(SLIMERJS_PATH, 'slimerjs'), os.path.join(SLIMERJS_PATH, 'einthusan.js'), url]
 			else:
-				file_cmd = ['xvfb-run', python_dir, os.path.join(SLIMERJS_PATH, 'slimerjs.py'), os.path.join(SLIMERJS_PATH, 'einthusan.js'), url, '--debug=true']
+				file_cmd = ['xvfb-run', python_dir, os.path.join(SLIMERJS_PATH, 'slimerjs.py'), os.path.join(SLIMERJS_PATH, 'einthusan.js'), url]
 		else:
 			if sys.platform == "win32":
 				file_cmd = [os.path.join(SLIMERJS_PATH, 'slimerjs.bat'), os.path.join(SLIMERJS_PATH, 'einthusan.js'), url]

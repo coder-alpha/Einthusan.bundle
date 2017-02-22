@@ -8,7 +8,7 @@
 ######################################################################################
 
 import common, updater, urllib2, time, sys, random
-import slimerjs, json
+import slimerjs, json, einthusan
 
 TITLE = common.TITLE
 PREFIX = common.PREFIX
@@ -39,7 +39,7 @@ LAST_PROCESSED_URL = []
 VideoURL = {}
 EINTHUSAN_SERVERS = ["Dallas","Washington","San Jose","Somerville","Toronto","London","Sydney"]
 EINTHUSAN_SERVER_INFO = {}
-USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0"
+
 SLIMERJS_INIT = []
 SERVER_OFFSET = []
 
@@ -57,7 +57,7 @@ def Start():
 	VideoClipObject.art = R(ART)
 	
 	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = USER_AGENT
+	HTTP.Headers['User-Agent'] = common.USER_AGENT
 	HTTP.Headers['Referer'] = BASE_URL
 	
 	LAST_PROCESSED_URL = []
@@ -85,7 +85,7 @@ def Start():
 @handler(PREFIX, TITLE, art=ART, thumb=ICON)
 def MainMenu():
 
-	if len(SLIMERJS_INIT) == 0:
+	if Prefs["use_slimerjs"] and len(SLIMERJS_INIT) == 0:
 		# Initialize SlimerJS module once for faster load times
 		Thread.Create(initSlimerJS)
 		SLIMERJS_INIT.append('True')
@@ -114,23 +114,38 @@ def SetLanguage():
 	
 	oc = ObjectContainer(title2='Select Language')
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + BASE_URL + "/intro/")
-	else:
-		page_elems = HTML.ElementFromURL(BASE_URL + "/intro/")
+	page_elems = common.GetPageElements(BASE_URL + "/intro/")
+	if page_elems == None and Prefs["use_https_alt"]:
+		return ObjectContainer(header=title, message='Page was not retrieved. SSL Alternate method not compatible. Try using Proxy method.')
+		
+	if page_elems == None and Prefs["use_proxy"]: 
+		return ObjectContainer(header=title, message='Page was not retrieved. Proxy did not work.')
+		
+	if page_elems == None: 
+		return ObjectContainer(header=title, message='Page was not retrieved. Try enabling SSL Alternate method.')
 	
 	blocks = page_elems.xpath(".//div[@class='block1']//ul")
 	for block in blocks:
 		langblock = block.xpath(".//li")
 		for langsq in langblock:
 			lang = langsq.xpath(".//p//text()")[0]
-			lang_img = "http:" + langsq.xpath(".//img//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+			lang_img = "http:" + langsq.xpath(".//img//@src")[0]
 			oc.add(DirectoryObject(key = Callback(SortMenu, lang = lang.lower()), title = lang, thumb = Resource.ContentsOfURLWithFallback(url = lang_img, fallback='MoviePosterUnavailable.jpg')))
 	
 	return oc
 
 @route(PREFIX + "/sortMenu")
 def SortMenu(lang, **kwargs):
+
+	page_elems = common.GetPageElements(BASE_URL + "/intro/")
+	if page_elems == None and Prefs["use_https_alt"]:
+		return ObjectContainer(header=title, message='Page was not retrieved. SSL Alternate method not compatible. Try using Proxy method.')
+		
+	if page_elems == None and Prefs["use_proxy"]: 
+		return ObjectContainer(header=title, message='Page was not retrieved. Proxy did not work.')
+		
+	if page_elems == None: 
+		return ObjectContainer(header=title, message='Page was not retrieved. Try enabling SSL Alternate method.')
 
 	cats1 = ['Hot Picks']
 	cats2 = ['Staff Picks', 'Recently Added']
@@ -159,15 +174,12 @@ def SortMenuHotPicks(lang, cat, **kwargs):
 
 	oc = ObjectContainer(title2=cat.title())
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + BASE_URL + "/movie/browse/?lang="+lang)
-	else:
-		page_elems = HTML.ElementFromURL(BASE_URL + "/movie/browse/?lang="+lang)
+	page_elems = common.GetPageElements(BASE_URL + "/movie/browse/?lang="+lang)
 	
 	tabs = page_elems.xpath(".//section[@id='UIFeaturedFilms']//div[@class='tabview']")
 	for block in tabs:
-		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0].replace(PROXY_PART2, PROXY_PART2_REPLACE)
-		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0]
+		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0]
 		title = block.xpath(".//div[@class='block2']//a[@class='title']//text()")[0]
 		summary = "Synopsis currently unavailable."
 		oc.add(DirectoryObject(key = Callback(EpisodeDetail, title=title, url=loc), title = title, summary=summary, thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')))
@@ -181,10 +193,7 @@ def SortMenuAlphabets(lang, cat, **kwargs):
 
 	oc = ObjectContainer(title2=cat.title())
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + BASE_URL + "/movie/browse/?lang="+lang)
-	else:
-		page_elems = HTML.ElementFromURL(BASE_URL + "/movie/browse/?lang="+lang)
+	page_elems = common.GetPageElements(BASE_URL + "/movie/browse/?lang="+lang)
 	
 	tabs = page_elems.xpath(".//section[@id='UIMovieFinder']//div[@class='tabview'][1]//div[@class='innertab simpletext']//a")
 	for block in tabs:
@@ -201,10 +210,7 @@ def SortMenuYears(lang, cat, **kwargs):
 
 	oc = ObjectContainer(title2=cat.title())
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + BASE_URL + "/movie/browse/?lang="+lang)
-	else:
-		page_elems = HTML.ElementFromURL(BASE_URL + "/movie/browse/?lang="+lang)
+	page_elems = common.GetPageElements(BASE_URL + "/movie/browse/?lang="+lang)
 	
 	tabs = page_elems.xpath(".//section[@id='UIMovieFinder']//div[@class='tabview'][2]//div[@class='innertab simpletext'][position()>1]//a")
 	for block in tabs:
@@ -239,15 +245,12 @@ def PageDetail(cat, lang, key="none", page_count="1", **kwargs):
 	
 	oc = ObjectContainer(title2=cat.title() + " (Page" + page_count + ")")
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + url)
-	else:
-		page_elems = HTML.ElementFromURL(url)
+	page_elems = common.GetPageElements(url)
 	
 	movies = page_elems.xpath(".//section[@id='UIMovieSummary']/ul/li")
 	for block in movies:
-		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0].replace(PROXY_PART2, PROXY_PART2_REPLACE)
-		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0]
+		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0]
 		title = block.xpath(".//div[@class='block2']//a[@class='title']//text()")[0]
 		try:
 			summary = block.xpath(".//p[@class='synopsis']//text()")[0]
@@ -283,15 +286,13 @@ def ComingSoon(title, **kwargs):
 @route(PREFIX + "/episodedetail")
 def EpisodeDetail(title, url, **kwargs):
 	
+	
 	Thread.Create(GetVideoUrl,{},url)
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + url)
-	else:
-		page_elems = HTML.ElementFromURL(url)
+	page_elems = common.GetPageElements(url)
 	
 	try:
-		thumb = "http:" + page_elems.xpath(".//section[@id='UIMovieSummary']//div[@class='block1']//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+		thumb = "http:" + page_elems.xpath(".//section[@id='UIMovieSummary']//div[@class='block1']//@src")[0]
 	except:
 		thumb = None
 	try:
@@ -333,6 +334,7 @@ def EpisodeDetail(title, url, **kwargs):
 		timer += 1
 		if timer > 20: # using 20 sec. timeout
 			return ObjectContainer(header=title, message=title + ' : Timeout error occurred !')
+	
 		
 	furl = VideoURL['GetVideoUrlComplete']
 	datacenter = VideoURL['GetVideoUrlDatacenter']
@@ -430,7 +432,7 @@ def initSlimerJS():
 	
 @route(PREFIX + "/GetVideoUrl")
 def GetVideoUrl(url):
-	Log("Running SlimerJS routine for : " + url)
+
 	VideoURL['GetVideoUrlComplete'] = 'False'
 	furl = 'error-fail'
 	datacenter = 'Unknown'
@@ -438,14 +440,22 @@ def GetVideoUrl(url):
 	
 	if url not in LAST_PROCESSED_URL:
 		del LAST_PROCESSED_URL[:]
-		#Log(url)
-		firefox_dir = Prefs['firefox_dir']
-		python_dir = Prefs['python_dir']
-		res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url, debug=debug)
-		if 'error-fail' not in res and 'MP4Link' in res:
+		
+		if Prefs["use_slimerjs"]:
+			if debug:
+				Log("Running SlimerJS routine for : " + url)
+			firefox_dir = Prefs['firefox_dir']
+			python_dir = Prefs['python_dir']
+			res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url, debug=debug)
+			out = "{" + find_between( out, "{", "}" ) + "}"
+		else:
+			if debug:
+				Log("Internal routine for : %s" % url)
+			out = einthusan.GetEinthusanData(url=url, debug=debug)
+			
+		if 'error-fail' not in out and 'MP4Link' in out:
 			try:
-				res2 = "{" + find_between( res, "{", "}" ) + "}"
-				res2 = json.loads(res2)
+				res2 = json.loads(out)
 				furl = res2['MP4Link']
 				datacenter = res2["Datacenter"]
 				#Log("vidfile: " + furl)
@@ -453,11 +463,11 @@ def GetVideoUrl(url):
 				LAST_PROCESSED_URL.append(furl)
 				LAST_PROCESSED_URL.append(datacenter)
 				if debug:
-					Log("Output:"+res)
+					Log("Output: %s" % out)
 			except:
-				Log("Error: No Video link. Output:" + res)
+				Log("Error: No Video link. Output: %s" % out)
 		else:
-			Log("Output:"+res)
+			Log("Output: %s" % out)
 	else:
 		furl = LAST_PROCESSED_URL[1]
 		datacenter = LAST_PROCESSED_URL[2]
@@ -484,7 +494,7 @@ def AllAvailableSources(furl, title, summary, thumb, year, rating, art):
 			title = location_with_state_country,
 			art = art,
 			summary = "Play using " + location_with_state_country + " server",
-			thumb = EINTHUSAN_SERVER_INFO[location]["Flag"]
+			thumb = R(EINTHUSAN_SERVER_INFO[location]["Flag"])
 			)
 		)
 		
@@ -544,8 +554,8 @@ def DetermineCurrentServer(furl, location):
 	
 	try:
 		for idx in EINTHUSAN_SERVER_INFO[location]["Servers"]:
-			if idx == int(server_n) + SERVER_OFFSET[0]:
-				return str(idx)
+			if (int(idx) + int(SERVER_OFFSET[0])) == int(server_n):
+				return str(int(idx)+int(SERVER_OFFSET[0]))
 	except:
 		pass
 	
@@ -555,10 +565,10 @@ def DetermineCurrentServer(furl, location):
 	return server_n
 	
 def AddSourceInfo():
-	US_FLAG = "https://cdn4.iconfinder.com/data/icons/popular-flags-1/614/2_-_United_States-512.png"
-	UK_FLAG = "https://cdn4.iconfinder.com/data/icons/flat-flags-part-one/512/GreatBritain512x512.png"
-	CAN_FLAG = "https://cdn4.iconfinder.com/data/icons/flat-flags-part-one/512/Canada512x512.png"
-	AUS_FLAG = "https://cdn4.iconfinder.com/data/icons/flat-flags-part-one/512/Australia512x512.png"
+	US_FLAG = "icon-us.png"
+	UK_FLAG = "icon-uk.png"
+	CAN_FLAG = "icon-can.png"
+	AUS_FLAG = "icon-aus.png"
 	
 	EINTHUSAN_SERVER_INFO["Dallas"] = {}
 	EINTHUSAN_SERVER_INFO["Dallas"]["Servers"]=[23,24,25,29,30,31,35,36,37,38,45]
@@ -715,15 +725,12 @@ def Search(query, lang, page_count='1', **kwargs):
 	oc = ObjectContainer(title2='Search Results')
 	
 	url = (BASE_URL + '/movie/results/' + '?lang='+ lang + '&page=' + page_count + '&query=%s' % String.Quote(query, usePlus=True))
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + url)
-	else:
-		page_elems = HTML.ElementFromURL(url)
+	page_elems = common.GetPageElements(url)
 
 	movies = page_elems.xpath(".//section[@id='UIMovieSummary']/ul/li")
 	for block in movies:
-		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0].replace(PROXY_PART2, PROXY_PART2_REPLACE)
-		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0]
+		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0]
 		title = block.xpath(".//div[@class='block2']//a[@class='title']//text()")[0]
 		try:
 			summary = block.xpath(".//p[@class='synopsis']//text()")[0]
@@ -792,31 +799,34 @@ def GetRedirector(url, **kwargs):
 @route(PREFIX + '/gethttpstatus')
 def GetHttpStatus(url):
 	try:
-		headers = {'User-Agent': USER_AGENT,
-		   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-		   'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-		   'Accept-Encoding': 'none',
-		   'Accept-Language': 'en-US,en;q=0.8',
-		   'Connection': 'keep-alive',
-		   'Referer': url}
-	   
-		if '|' in url:
-			url_split = url.split('|')
-			url = url_split[0]
-			headers['Referer'] = url
-			for params in url_split:
-				if '=' in params:
-					param_split = params.split('=')
-					param = param_split[0].strip()
-					param_val = urllib2.quote(param_split[1].strip(), safe='/=&')
-					headers[param] = param_val
-
-		if 'http://' in url or 'https://' in url:
-			req = urllib2.Request(url, headers=headers)
-			conn = urllib2.urlopen(req, timeout=10)
-			resp = str(conn.getcode())
+		if Prefs["use_https_alt"]:
+			resp = einthusan.requestWithHeaders(url, output='responsecode')
 		else:
-			resp = '200'
+			headers = {'User-Agent': common.USER_AGENT,
+			   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+			   'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+			   'Accept-Encoding': 'none',
+			   'Accept-Language': 'en-US,en;q=0.8',
+			   'Connection': 'keep-alive',
+			   'Referer': url}
+		   
+			if '|' in url:
+				url_split = url.split('|')
+				url = url_split[0]
+				headers['Referer'] = url
+				for params in url_split:
+					if '=' in params:
+						param_split = params.split('=')
+						param = param_split[0].strip()
+						param_val = urllib2.quote(param_split[1].strip(), safe='/=&')
+						headers[param] = param_val
+
+			if 'http://' in url or 'https://' in url:
+				req = urllib2.Request(url, headers=headers)
+				conn = urllib2.urlopen(req, timeout=10)
+				resp = str(conn.getcode())
+			else:
+				resp = '200'
 	except Exception as e:
 		resp = '0'
 		if Prefs['use_debug']:
