@@ -114,23 +114,38 @@ def SetLanguage():
 	
 	oc = ObjectContainer(title2='Select Language')
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + BASE_URL + "/intro/")
-	else:
-		page_elems = HTML.ElementFromURL(BASE_URL + "/intro/")
+	page_elems = common.GetPageElements(BASE_URL + "/intro/")
+	if page_elems == None and Prefs["use_https_alt"]:
+		return ObjectContainer(header=title, message='Page was not retrieved. SSL Alternate method not compatible. Try using Proxy method.')
+		
+	if page_elems == None and Prefs["use_proxy"]: 
+		return ObjectContainer(header=title, message='Page was not retrieved. Proxy did not work.')
+		
+	if page_elems == None: 
+		return ObjectContainer(header=title, message='Page was not retrieved. Try enabling SSL Alternate method.')
 	
 	blocks = page_elems.xpath(".//div[@class='block1']//ul")
 	for block in blocks:
 		langblock = block.xpath(".//li")
 		for langsq in langblock:
 			lang = langsq.xpath(".//p//text()")[0]
-			lang_img = "http:" + langsq.xpath(".//img//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+			lang_img = "http:" + langsq.xpath(".//img//@src")[0]
 			oc.add(DirectoryObject(key = Callback(SortMenu, lang = lang.lower()), title = lang, thumb = Resource.ContentsOfURLWithFallback(url = lang_img, fallback='MoviePosterUnavailable.jpg')))
 	
 	return oc
 
 @route(PREFIX + "/sortMenu")
 def SortMenu(lang, **kwargs):
+
+	page_elems = common.GetPageElements(BASE_URL + "/intro/")
+	if page_elems == None and Prefs["use_https_alt"]:
+		return ObjectContainer(header=title, message='Page was not retrieved. SSL Alternate method not compatible. Try using Proxy method.')
+		
+	if page_elems == None and Prefs["use_proxy"]: 
+		return ObjectContainer(header=title, message='Page was not retrieved. Proxy did not work.')
+		
+	if page_elems == None: 
+		return ObjectContainer(header=title, message='Page was not retrieved. Try enabling SSL Alternate method.')
 
 	cats1 = ['Hot Picks']
 	cats2 = ['Staff Picks', 'Recently Added']
@@ -159,15 +174,12 @@ def SortMenuHotPicks(lang, cat, **kwargs):
 
 	oc = ObjectContainer(title2=cat.title())
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + BASE_URL + "/movie/browse/?lang="+lang)
-	else:
-		page_elems = HTML.ElementFromURL(BASE_URL + "/movie/browse/?lang="+lang)
+	page_elems = common.GetPageElements(BASE_URL + "/movie/browse/?lang="+lang)
 	
 	tabs = page_elems.xpath(".//section[@id='UIFeaturedFilms']//div[@class='tabview']")
 	for block in tabs:
-		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0].replace(PROXY_PART2, PROXY_PART2_REPLACE)
-		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0]
+		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0]
 		title = block.xpath(".//div[@class='block2']//a[@class='title']//text()")[0]
 		summary = "Synopsis currently unavailable."
 		oc.add(DirectoryObject(key = Callback(EpisodeDetail, title=title, url=loc), title = title, summary=summary, thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')))
@@ -181,10 +193,7 @@ def SortMenuAlphabets(lang, cat, **kwargs):
 
 	oc = ObjectContainer(title2=cat.title())
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + BASE_URL + "/movie/browse/?lang="+lang)
-	else:
-		page_elems = HTML.ElementFromURL(BASE_URL + "/movie/browse/?lang="+lang)
+	page_elems = common.GetPageElements(BASE_URL + "/movie/browse/?lang="+lang)
 	
 	tabs = page_elems.xpath(".//section[@id='UIMovieFinder']//div[@class='tabview'][1]//div[@class='innertab simpletext']//a")
 	for block in tabs:
@@ -201,10 +210,7 @@ def SortMenuYears(lang, cat, **kwargs):
 
 	oc = ObjectContainer(title2=cat.title())
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + BASE_URL + "/movie/browse/?lang="+lang)
-	else:
-		page_elems = HTML.ElementFromURL(BASE_URL + "/movie/browse/?lang="+lang)
+	page_elems = common.GetPageElements(BASE_URL + "/movie/browse/?lang="+lang)
 	
 	tabs = page_elems.xpath(".//section[@id='UIMovieFinder']//div[@class='tabview'][2]//div[@class='innertab simpletext'][position()>1]//a")
 	for block in tabs:
@@ -239,15 +245,12 @@ def PageDetail(cat, lang, key="none", page_count="1", **kwargs):
 	
 	oc = ObjectContainer(title2=cat.title() + " (Page" + page_count + ")")
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + url)
-	else:
-		page_elems = HTML.ElementFromURL(url)
+	page_elems = common.GetPageElements(url)
 	
 	movies = page_elems.xpath(".//section[@id='UIMovieSummary']/ul/li")
 	for block in movies:
-		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0].replace(PROXY_PART2, PROXY_PART2_REPLACE)
-		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0]
+		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0]
 		title = block.xpath(".//div[@class='block2']//a[@class='title']//text()")[0]
 		try:
 			summary = block.xpath(".//p[@class='synopsis']//text()")[0]
@@ -286,13 +289,10 @@ def EpisodeDetail(title, url, **kwargs):
 	
 	Thread.Create(GetVideoUrl,{},url)
 	
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + url)
-	else:
-		page_elems = HTML.ElementFromURL(url)
+	page_elems = common.GetPageElements(url)
 	
 	try:
-		thumb = "http:" + page_elems.xpath(".//section[@id='UIMovieSummary']//div[@class='block1']//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+		thumb = "http:" + page_elems.xpath(".//section[@id='UIMovieSummary']//div[@class='block1']//@src")[0]
 	except:
 		thumb = None
 	try:
@@ -447,15 +447,15 @@ def GetVideoUrl(url):
 			firefox_dir = Prefs['firefox_dir']
 			python_dir = Prefs['python_dir']
 			res = slimerjs.einthusan(python_dir=python_dir, firefox_dir=firefox_dir, url=url, debug=debug)
-			res = "{" + find_between( res, "{", "}" ) + "}"
+			out = "{" + find_between( out, "{", "}" ) + "}"
 		else:
 			if debug:
 				Log("Internal routine for : %s" % url)
-			res = einthusan.GetEinthusanData(url=url, debug=debug)
+			out = einthusan.GetEinthusanData(url=url, debug=debug)
 			
-		if 'error-fail' not in res and 'MP4Link' in res:
+		if 'error-fail' not in out and 'MP4Link' in out:
 			try:
-				res2 = json.loads(res)
+				res2 = json.loads(out)
 				furl = res2['MP4Link']
 				datacenter = res2["Datacenter"]
 				#Log("vidfile: " + furl)
@@ -463,11 +463,11 @@ def GetVideoUrl(url):
 				LAST_PROCESSED_URL.append(furl)
 				LAST_PROCESSED_URL.append(datacenter)
 				if debug:
-					Log("Output: %s" % res)
+					Log("Output: %s" % out)
 			except:
-				Log("Error: No Video link. Output: %s" % res)
+				Log("Error: No Video link. Output: %s" % out)
 		else:
-			Log("Output: %s" % res)
+			Log("Output: %s" % out)
 	else:
 		furl = LAST_PROCESSED_URL[1]
 		datacenter = LAST_PROCESSED_URL[2]
@@ -725,15 +725,12 @@ def Search(query, lang, page_count='1', **kwargs):
 	oc = ObjectContainer(title2='Search Results')
 	
 	url = (BASE_URL + '/movie/results/' + '?lang='+ lang + '&page=' + page_count + '&query=%s' % String.Quote(query, usePlus=True))
-	if Prefs["use_proxy"]:
-		page_elems = HTML.ElementFromURL(PROXY_URL + url)
-	else:
-		page_elems = HTML.ElementFromURL(url)
+	page_elems = common.GetPageElements(url)
 
 	movies = page_elems.xpath(".//section[@id='UIMovieSummary']/ul/li")
 	for block in movies:
-		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0].replace(PROXY_PART2, PROXY_PART2_REPLACE)
-		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0].replace(PROXY_PART, PROXY_PART_REPLACE)
+		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0]
+		thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0]
 		title = block.xpath(".//div[@class='block2']//a[@class='title']//text()")[0]
 		try:
 			summary = block.xpath(".//p[@class='synopsis']//text()")[0]

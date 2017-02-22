@@ -6,9 +6,10 @@
 # https://github.com/Shani-08
 #
 
-import cookielib, urllib, urllib2, re, base64, json
-import common
+import cookielib, urllib, urllib2, re, base64, json, sys
 import HTMLParser
+
+USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:33.0) Gecko/20100101 Firefox/33.0"
 
 def decodeEInth(lnk):
 	t=10
@@ -22,14 +23,24 @@ def encodeEInth(lnk):
 	r=lnk[0:t]+lnk[-1]+lnk[t+2:-1]
 	return r
 	
-def getUrl(url, cookieJar=None,post=None, timeout=20, headers=None,jsonpost=False):
+def request(url, cookieJar=None, post=None, timeout=20, headers=None, jsonpost=False, https_skip=False):
+
 	cookie_handler = urllib2.HTTPCookieProcessor(cookieJar)
-	opener = urllib2.build_opener(cookie_handler, urllib2.HTTPBasicAuthHandler(), urllib2.HTTPHandler())
+	
+	if sys.version_info < (2, 7, 9): raise Exception()
+	import ssl; ssl_context = ssl.create_default_context()
+	ssl_context.check_hostname = False
+	ssl_context.verify_mode = ssl.CERT_NONE
+	if https_skip == True:
+		opener = urllib2.build_opener(cookie_handler, urllib2.HTTPBasicAuthHandler(), urllib2.HTTPHandler())
+	else:
+		opener = urllib2.build_opener(urllib2.HTTPSHandler(context=ssl_context), cookie_handler, urllib2.HTTPBasicAuthHandler(), urllib2.HTTPHandler())
+	
 	header_in_page=None
 	if '|' in url:
 		url,header_in_page=url.split('|')
 	req = urllib2.Request(url)
-	req.add_header('User-Agent',common.USER_AGENT)
+	req.add_header('User-Agent',USER_AGENT)
 	if headers:
 		for h,hv in headers:
 			req.add_header(h,hv)
@@ -67,18 +78,24 @@ def parseUrl(url):
 	lang = url.split('lang=')[1]
 	
 	return id, lang
+	
+def requestWithHeaders(url):
+	cookieJar = cookielib.LWPCookieJar()	
+	headers=[('Origin','https://einthusan.tv'),('Referer','https://einthusan.tv/movie/browse/?lang=hindi'),('User-Agent',USER_AGENT)]
+	htm=request(url,headers=headers,cookieJar=cookieJar)
+	return htm
 
-def GetEinthusanData(url, debug=False, useProxy=False):
+def GetEinthusanData(url, debug=False):
 	
 	try:
 		id,lang = parseUrl(url)
 		cookieJar = cookielib.LWPCookieJar()
 		
-		headers=[('Origin','https://einthusan.tv'),('Referer','https://einthusan.tv/movie/browse/?lang=hindi'),('User-Agent',common.USER_AGENT)]
+		headers=[('Origin','https://einthusan.tv'),('Referer','https://einthusan.tv/movie/browse/?lang=hindi'),('User-Agent',USER_AGENT)]
 		mainurl='https://einthusan.tv/movie/watch/%s/?lang=%s'%(id,lang)
 		mainurlajax='https://einthusan.tv/ajax/movie/watch/%s/?lang=%s'%(id,lang)
 		
-		htm=getUrl(mainurl,headers=headers,cookieJar=cookieJar)
+		htm=request(mainurl,headers=headers,cookieJar=cookieJar)
 		
 		lnk=re.findall('data-ejpingables=["\'](.*?)["\']',htm)[0]#.replace('&amp;','&')
 
@@ -90,8 +107,7 @@ def GetEinthusanData(url, debug=False, useProxy=False):
 		
 		postdata={'xEvent':'UIVideoPlayer.PingOutcome','xJson':jdata,'arcVersion':'3','appVersion':'59','gorilla.csrf.Token':gid}
 		postdata = urllib.urlencode(postdata)
-		rdata=getUrl(mainurlajax,headers=headers,post=postdata,cookieJar=cookieJar)
-		#print rdata
+		rdata=request(mainurlajax,headers=headers,post=postdata,cookieJar=cookieJar)
 		
 		r=json.loads(rdata)["Data"]["EJLinks"]
 		data=(base64.b64decode(decodeEInth(r)))
@@ -101,9 +117,13 @@ def GetEinthusanData(url, debug=False, useProxy=False):
 		return "error-fail - code execution error - %s, url - %s" % (str(err), url)
  
 	
-def Test(url, debug=False, useProxy=False):
-	d = GetEinthusanData(url=url, debug=debug, useProxy=useProxy)
+def Test():
+	url = 'https://einthusan.tv/movie/watch/9097/?lang=hindi'
+	d = GetEinthusanData(url=url,)
 	d = json.loads(d)
 	print (d)
 
-#Test(url = 'https://einthusan.tv/movie/watch/9097/?lang=hindi', debug=True, useProxy=True)
+def Test2():
+	url = 'https://einthusan.tv'
+	d = requestWithHeaders(url=url)
+	print (d)
