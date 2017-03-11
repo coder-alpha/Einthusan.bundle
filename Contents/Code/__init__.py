@@ -83,7 +83,7 @@ def Start():
 # Menu hierarchy
 
 @handler(PREFIX, TITLE, art=ART, thumb=ICON)
-def MainMenu():
+def MainMenu(**kwargs):
 
 	if Prefs["use_slimerjs"] and len(SLIMERJS_INIT) == 0:
 		# Initialize SlimerJS module once for faster load times
@@ -110,7 +110,7 @@ def MainMenu():
 	return oc
 	
 @route(PREFIX + "/setlanguage")
-def SetLanguage():
+def SetLanguage(**kwargs):
 	
 	oc = ObjectContainer(title2='Select Language')
 	
@@ -139,13 +139,13 @@ def SortMenu(lang, **kwargs):
 
 	page_elems = common.GetPageElements(BASE_URL + "/intro/")
 	if page_elems == None and Prefs["use_https_alt"]:
-		return ObjectContainer(header=title, message='Page was not retrieved. SSL Alternate method not compatible. Try using Proxy method.')
+		return ObjectContainer(header='SortMenu', message='Page was not retrieved. SSL Alternate method not compatible. Try using Proxy method.')
 		
 	if page_elems == None and Prefs["use_proxy"]: 
-		return ObjectContainer(header=title, message='Page was not retrieved. Proxy did not work.')
+		return ObjectContainer(header='SortMenu', message='Page was not retrieved. Proxy did not work.')
 		
 	if page_elems == None: 
-		return ObjectContainer(header=title, message='Page was not retrieved. Try enabling SSL Alternate method.')
+		return ObjectContainer(header='SortMenu', message='Page was not retrieved. Try enabling SSL Alternate method.')
 
 	cats1 = ['Hot Picks']
 	cats2 = ['Staff Picks', 'Recently Added']
@@ -431,7 +431,7 @@ def initSlimerJS():
 	Log("Initialized SlimerJS: " + res)
 	
 @route(PREFIX + "/GetVideoUrl")
-def GetVideoUrl(url):
+def GetVideoUrl(url, **kwargs):
 
 	VideoURL['GetVideoUrlComplete'] = 'False'
 	furl = 'error-fail'
@@ -479,7 +479,7 @@ def GetVideoUrl(url):
 	VideoURL['GetVideoUrlDatacenter'] = datacenter
 
 @route(PREFIX + "/AllAvailableSources")
-def AllAvailableSources(furl, title, summary, thumb, year, rating, art):
+def AllAvailableSources(furl, title, summary, thumb, year, rating, art, **kwargs):
 	
 	oc = ObjectContainer(title1 = unicode(title), art=thumb)	
 
@@ -501,7 +501,7 @@ def AllAvailableSources(furl, title, summary, thumb, year, rating, art):
 	return oc	
 	
 @route(PREFIX + "/AllAvailableSources2")
-def AllAvailableSources2(furl, title, summary, thumb, year, rating, art, location):
+def AllAvailableSources2(furl, title, summary, thumb, year, rating, art, location, **kwargs):
 	
 	oc = ObjectContainer(title1 = unicode(title), art=thumb)	
 	vidpath = furl.split('.tv/')[1]
@@ -521,7 +521,7 @@ def AllAvailableSources2(furl, title, summary, thumb, year, rating, art, locatio
 	return oc
 	
 @route(PREFIX + "/AvailableSourceFrom")
-def AvailableSourceFrom(furl, location):
+def AvailableSourceFrom(furl, location, **kwargs):
 
 	# fix San Jose datacenter label
 	if location == 'San':
@@ -539,7 +539,7 @@ def AvailableSourceFrom(furl, location):
 	return url, choice_str, ret_code
 
 @route(PREFIX + "/DetermineCurrentServer")
-def DetermineCurrentServer(furl, location):
+def DetermineCurrentServer(furl, location, **kwargs):
 	server_n = furl.split('.einthusan.tv')[0].strip('https://s')
 	
 	del SERVER_OFFSET[:]
@@ -694,7 +694,7 @@ def RemoveBookmark(title, url, **kwargs):
 # Clears the Dict that stores the bookmarks list
 	
 @route(PREFIX + "/clearbookmarks")
-def ClearBookmarks():
+def ClearBookmarks(**kwargs):
 
 	for each in Dict:
 		if each.find(TITLE.lower()) != -1 and 'http' in each:
@@ -706,7 +706,7 @@ def ClearBookmarks():
 # Clears the Dict that stores the search list
 	
 @route(PREFIX + "/clearsearches")
-def ClearSearches():
+def ClearSearches(**kwargs):
 
 	for each in Dict:
 		if each.find(TITLE.lower()) != -1 and 'MyCustomSearch' in each:
@@ -797,7 +797,7 @@ def GetRedirector(url, **kwargs):
 ####################################################################################################
 # Get HTTP response code (200 == good)
 @route(PREFIX + '/gethttpstatus')
-def GetHttpStatus(url):
+def GetHttpStatus(url, **kwargs):
 	try:
 		if Prefs["use_https_alt"]:
 			resp = einthusan.requestWithHeaders(url, output='responsecode')

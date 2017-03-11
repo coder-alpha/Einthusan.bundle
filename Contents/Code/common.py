@@ -4,7 +4,7 @@ import einthusan
 
 ################################################################################
 TITLE = "Einthusan"
-VERSION = '0.13' # Release notation (x.y - where x is major and y is minor)
+VERSION = '0.14' # Release notation (x.y - where x is major and y is minor)
 GITHUB_REPOSITORY = 'coder-alpha/Einthusan.bundle'
 PREFIX = "/video/einthusan"
 ################################################################################
@@ -21,7 +21,7 @@ PROXY_PART2_REPLACE = "//"
 
 ######################################################################################
 @route(PREFIX + "/GetPageElements")
-def GetPageElements(url, headers=None):
+def GetPageElements(url, headers=None, **kwargs):
 
 	page_data_elems = None
 	try:
@@ -34,7 +34,7 @@ def GetPageElements(url, headers=None):
 	
 ######################################################################################
 @route(PREFIX + "/GetPageAsString")
-def GetPageAsString(url, headers=None, timeout=15):
+def GetPageAsString(url, headers=None, timeout=15, **kwargs):
 
 	page_data_string = None
 	try:
