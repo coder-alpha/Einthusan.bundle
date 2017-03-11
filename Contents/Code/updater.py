@@ -12,7 +12,7 @@ FEED_URL = 'https://github.com/{0}/releases.atom'
 ################################################################################
 
 @route(common.PREFIX + '/updatechannel')
-def menu(title):
+def menu(title, **kwargs):
 	oc = ObjectContainer(title2=title)
 
 	# Plugin Version
@@ -24,7 +24,7 @@ def menu(title):
 	return oc
 
 # This gets the release name
-def get_latest_version():
+def get_latest_version(**kwargs):
 	try:
 		release_feed_url = ('https://github.com/{0}/releases.atom'.format(common.GITHUB_REPOSITORY))
 		release_feed_data = RSS.FeedFromURL(release_feed_url, cacheTime=0, timeout=15)
@@ -37,7 +37,7 @@ def get_latest_version():
 		Log.Error('Checking for new releases failed: {0}'.format(repr(exception)))
 
 ################################################################################
-def update_available():
+def update_available(**kwargs):
 
 	try:
 		latest_version_str, summ, tag = get_latest_version()
@@ -55,7 +55,7 @@ def update_available():
 
 ################################################################################
 @route(common.PREFIX + '/update')
-def update(url, ver):
+def update(url, ver, **kwargs):
 		
 	if ver:
 		msg = 'Plugin updated to version {0}'.format(ver)
@@ -95,7 +95,7 @@ def update(url, ver):
 
 ################################################################################
 @route(common.PREFIX + '/updateold')
-def updateold(title, feed, ver):
+def updateold(title, feed, ver, **kwargs):
 
 	oc = ObjectContainer(title2=title)
 	try:
@@ -123,7 +123,7 @@ def updateold(title, feed, ver):
 	except Exception as exception:
 		return ObjectContainer(header='Error', message=str(exception))
 
-def test_version():
+def test_version(**kwargs):
 	update_avail, latest_version, summ, tag = update_available()
 	if not update_avail:
 		result		 = True
@@ -135,7 +135,7 @@ def test_version():
 		result_summary = 'Click to update to latest version.'
 	return (latest_version, result, result_str, result_summary + ' - ' + summ, tag)
 	
-def get_test_thumb(result):
+def get_test_thumb(result, **kwargs):
     if result == True:
         return R(ICON_OK)
     elif result == 'Warning':
@@ -146,14 +146,14 @@ def get_test_thumb(result):
         return R(ICON_ERROR)
 
 # clean tag names based on your release naming convention
-def getOnlyVersionNumber(verStr):
+def getOnlyVersionNumber(verStr, **kwargs):
 	latest_version_str = verStr.lower().replace(' ','')
 	latest_version_str = latest_version_str.lower().replace('ver.','')
 	latest_version_str = latest_version_str.lower().replace('v','')
 	return latest_version_str
 	
 # clean tag names based on your release naming convention
-def cleanSummary(summary):
+def cleanSummary(summary, **kwargs):
 	summary = summary['value']
 	summary = summary.replace('<p>','- ')
 	summary = summary.replace('</p>','')
