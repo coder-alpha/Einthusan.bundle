@@ -131,7 +131,10 @@ def SetLanguage(**kwargs):
 		langblock = block.xpath(".//li")
 		for langsq in langblock:
 			lang = langsq.xpath(".//p//text()")[0]
-			lang_img = "http:" + langsq.xpath(".//img//@src")[0]
+			try:
+				lang_img = "http:" + langsq.xpath(".//img//@src")[0]
+			except:
+				lang_img = "http:" + langsq.xpath(".//img//@data-src")[0]
 			oc.add(DirectoryObject(key = Callback(SortMenu, lang = lang.lower()), title = lang, thumb = Resource.ContentsOfURLWithFallback(url = lang_img, fallback='MoviePosterUnavailable.jpg')))
 	
 	return oc
@@ -198,7 +201,10 @@ def SortMenuHotPicks(lang, cat, **kwargs):
 	tabs = page_elems.xpath(".//section[@id='UIFeaturedFilms']//div[@class='tabview']")
 	for block in tabs:
 		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0]
-		thumb = "http:" + block.xpath(".//div[@class='block1']//img/@src")[0]
+		try:
+			thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0]
+		except:
+			thumb = "http:" + block.xpath(".//div[@class='block1']//@data-src")[0]
 		title = block.xpath(".//div[@class='block2']//a[@class='title']//text()")[0]
 		summary = "Synopsis currently unavailable."
 		oc.add(DirectoryObject(key = Callback(EpisodeDetail, title=title, url=loc), title = title, summary=summary, thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')))
@@ -253,7 +259,10 @@ def SortMenuCast(lang, cat, **kwargs):
 	for block in tabs:
 		url = BASE_URL + block.xpath(".//@href")[0]
 		title = block.xpath(".//label//text()")[0]
-		thumb = "http:" + block.xpath(".//img/@src")[0]
+		try:
+			thumb = "http:" + block.xpath(".//@src")[0]
+		except:
+			thumb = "http:" + block.xpath(".//@data-src")[0]
 		id = re.findall(r'id=(.*?)&', url)[0]
 		oc.add(DirectoryObject(key = Callback(PageDetail, lang=lang, cat=cat, key=id), title = title, thumb = Resource.ContentsOfURLWithFallback(url = thumb, fallback='MoviePosterUnavailable.jpg')))
 		
@@ -309,7 +318,10 @@ def PageDetail(cat, lang, key="none", filter="", page_count="1", **kwargs):
 	movies = page_elems.xpath(".//section[@id='UIMovieSummary']/ul/li")
 	for block in movies:
 		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0]
-		thumb = "http:" + block.xpath(".//div[@class='block1']//img/@src")[0]
+		try:
+			thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0]
+		except:
+			thumb = "http:" + block.xpath(".//div[@class='block1']//@data-src")[0]
 		title = block.xpath(".//div[@class='block2']//a[@class='title']//text()")[0]
 		try:
 			summary = block.xpath(".//p[@class='synopsis']//text()")[0]
@@ -351,7 +363,10 @@ def EpisodeDetail(title, url, **kwargs):
 	page_elems = common.GetPageElements(url)
 	
 	try:
-		thumb = "http:" + page_elems.xpath(".//section[@id='UIMovieSummary']//div[@class='block1']//img/@src")[0]
+		try:
+			thumb = "http:" + page_elems.xpath(".//section[@id='UIMovieSummary']//div[@class='block1']//@src")[0]
+		except:
+			thumb = "http:" + page_elems.xpath(".//section[@id='UIMovieSummary']//div[@class='block1']//@data-src")[0]
 	except:
 		thumb = None
 	try:
@@ -789,7 +804,10 @@ def Search(query, lang, page_count='1', **kwargs):
 	movies = page_elems.xpath(".//section[@id='UIMovieSummary']/ul/li")
 	for block in movies:
 		loc = BASE_URL + block.xpath(".//div[@class='block1']//@href")[0]
-		thumb = "http:" + block.xpath(".//div[@class='block1']//img/@src")[0]
+		try:
+			thumb = "http:" + block.xpath(".//div[@class='block1']//@src")[0]
+		except:
+			thumb = "http:" + block.xpath(".//div[@class='block1']//@data-src")[0]
 		title = block.xpath(".//div[@class='block2']//a[@class='title']//text()")[0]
 		try:
 			summary = block.xpath(".//p[@class='synopsis']//text()")[0]
